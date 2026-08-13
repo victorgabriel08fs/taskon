@@ -14,13 +14,24 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
-#[Fillable(['name', 'email', 'password', 'avatar_color', 'title'])]
+#[Fillable(['name', 'email', 'password', 'avatar_color', 'title', 'daily_digest'])]
 #[Hidden(['password', 'remember_token'])]
 #[Appends(['initials'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    /**
+     * O default do banco só vale para o INSERT — a instância recém-criada
+     * continuaria sem o atributo, e a tela de notificações do cadastro
+     * apareceria desligada até o primeiro reload.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'daily_digest' => true,
+    ];
 
     /**
      * Get the attributes that should be cast.
@@ -32,6 +43,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'daily_digest' => 'boolean',
+            'digest_last_sent_at' => 'datetime',
         ];
     }
 

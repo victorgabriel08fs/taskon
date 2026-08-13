@@ -629,7 +629,115 @@ seja, banco realmente novo.
 
 ---
 
-## 11. O que ficou de fora (e como fazer)
+## 11. E-mail: o resumo diário
+
+`taskon:daily-digest` manda, uma vez por dia, o que está vencido e o que vence
+em seguida. As peças: [`TaskDigest`](app/Support/TaskDigest.php) (os dados),
+[`DailyDigest`](app/Mail/DailyDigest.php) (o e-mail),
+[`SendDailyDigest`](app/Console/Commands/SendDailyDigest.php) (o disparo) e o
+agendamento em [`routes/console.php`](routes/console.php).
+
+### 11.1 ⚠️ O fuso do app deixou de ser UTC
+
+Este é o detalhe que faz o resumo funcionar — ou mentir.
+
+O `<input type="datetime-local">` do prazo manda uma data **sem fuso**
+(`"2026-08-13T09:00"`) e o Laravel a interpreta em `config('app.timezone')`.
+Com `UTC` ali, escolher 09:00 gravava `09:00Z`, e a interface — que converte de
+volta para o horário do navegador — devolvia **06:00**. Três horas a menos, sem
+erro nenhum, desde sempre.
+
+O resumo diário herdaria o mesmo desalinhamento em dose dupla: `now()` em UTC
+faz "hoje" começar às 21:00 do dia anterior, então das 21:00 à meia-noite todo
+card de amanhã aparecia como "vence hoje".
+
+`config/app.php` agora usa `env('APP_TIMEZONE', 'America/Sao_Paulo')`. Se um dia
+o app for para um servidor de verdade, com gente em fusos diferentes, a saída
+não é voltar para UTC no config — é guardar o fuso **por usuário** e converter na
+borda (formulário e e-mail), mantendo o banco em UTC.
+
+### 11.2 Só cards atribuídos, e só de quadros vivos
+
+```php
+Card::query()
+    ->whereNull('cards.archived_at')
+    ->whereHas('members', fn ($q) => $q->whereKey($user->getKey()))
+    ->whereHas('board', fn ($q) => $q
+        ->whereNull('boards.archived_at')
+        ->whereHas('members', fn ($q) => $q->whereKey($user->getKey())))
+```
+
+O segundo `whereHas` parece redundante e não é: sair de um quadro **não** apaga
+as atribuições de card. Sem ele, quem foi removido do quadro continuaria
+recebendo lembretes de tarefas que já nem consegue abrir — vazamento de dado
+por e-mail, o pior lugar para vazar, porque fica no histórico de quem recebeu.
+
+Autorização em consulta de fila é a mesma regra da seção 2.2: não existe
+`$request->user()` para a policy conferir, então o filtro tem que estar no
+`WHERE`.
+
+### 11.3 O carimbo é a trava contra o envio duplo
+
+`users.digest_last_sent_at` guarda o último envio bem-sucedido. O comando pula
+quem já recebeu hoje. Sem isso, um `docker compose restart` no horário errado,
+um retry manual ou dois agendadores de pé mandariam o mesmo e-mail duas vezes —
+e a segunda cópia treina a pessoa a ignorar a primeira.
+
+Regras que caem junto:
+
+- **`--force`** fura a trava e o opt-out. É a válvula para teste manual.
+- **O botão "enviar agora" das configurações NÃO carimba.** Testar não pode
+  consumir o envio real do dia.
+- **Falha de um endereço não derruba o lote.** O `try/catch` por usuário deixa o
+  carimbo intacto, então a próxima rodada tenta de novo.
+
+### 11.4 Não mandar é uma feature
+
+`skip_when_empty` corta o envio de quem não tem nada vencido, nada no horizonte
+e nada concluído nas últimas 24 h. Um resumo diário que chega vazio todo dia
+vira ruído em duas semanas, e aí o dia em que ele traz algo urgente também é
+ignorado. A tela de configurações mostra a prévia do que sairia hoje,
+inclusive quando a resposta é "nada — o envio seria pulado".
+
+### 11.5 HTML de e-mail é HTML de 2005
+
+[`resources/views/mail/daily-digest.blade.php`](resources/views/mail/daily-digest.blade.php)
+usa tabela, largura fixa e estilo inline porque cliente de e-mail descarta
+`<style>` externo, flexbox e grid. Regras aplicadas ali:
+
+- Gradiente **sempre** com `background-color` sólido antes do
+  `background-image` — o Outlook ignora o gradiente e ficaria texto branco no
+  branco.
+- Faixa colorida da lateral é um `<td width="4">`, não `border-left`.
+- Nenhuma imagem remota: quase todo cliente bloqueia por padrão, e um layout
+  que depende de imagem chega quebrado.
+- Cabeçalho `List-Unsubscribe` — sem ele, quem quer sair marca como spam, e isso
+  queima a reputação do domínio no Resend.
+
+### 11.6 Mailpit no desenvolvimento, Resend na entrega
+
+`MAIL_MAILER=smtp` entrega no Mailpit central e nada sai da máquina — é o
+default e é onde se olha o layout. `MAIL_MAILER=resend` + `RESEND_API_KEY`
+entrega de verdade pela API; aí o Mailpit deixa de ver qualquer coisa.
+
+Enquanto o domínio não estiver verificado no painel do Resend, a API só aceita
+`onboarding@resend.dev` como remetente e só entrega para o e-mail da conta.
+Errar isso dá 403 na hora do envio, não silêncio — o comando marca a linha com
+`✗` e registra no log.
+
+### 11.7 Quem chama o agendador
+
+O Laravel não tem relógio. `taskon-scheduler` roda `php artisan schedule:work`,
+um laço que acorda a cada minuto. Em servidor de verdade seria um cron chamando
+`schedule:run` — aqui o objetivo é subir tudo com um `docker compose up`.
+
+O e-mail é enviado **síncrono**, sem fila: seria preciso um worker de pé só para
+isso. Se o volume crescer, `DailyDigest implements ShouldQueue` e o serviço
+`taskon-queue` já comentado no `docker-compose.yml`.
+
+---
+
+## 12. O que ficou de fora (e como fazer)
 
 | Item | Caminho |
 | --- | --- |
@@ -639,6 +747,7 @@ seja, banco realmente novo.
 | Markdown na descrição | Renderizar no cliente com sanitização; **nunca** `dangerouslySetInnerHTML` sem sanitizar. |
 | Busca global entre quadros | Índice `FULLTEXT` em `cards.title` + rota `/search` com `Inertia::defer`. |
 | Notificação por e-mail em menção | Fila (`QUEUE_CONNECTION=database`) + `php artisan queue:work`. |
+| Horário do resumo por usuário | Coluna `digest_at` + agrupar os envios por horário no comando; hoje é um horário só, global (seção 11.1). |
 
 Ao pegar um destes: comece pela migration, depois model, policy, controller,
 resource, tipo TS e só então o componente. Nessa ordem o TypeScript te guia.

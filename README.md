@@ -23,6 +23,9 @@
 - **Filtros** por texto, etiqueta, responsável, "só os meus" e "esconder
   concluídos".
 - **Feed de atividades** do quadro, carregado depois da primeira pintura.
+- **Resumo diário por e-mail** com o que venceu, o que vence hoje e o que vem
+  nos próximos dias — entregue pelo Resend, com opt-out em
+  `/settings/notificações`.
 - **Autenticação** completa: cadastro, login com rate limit, recuperação de
   senha, troca de senha, perfil com cor de avatar e exclusão de conta.
 - **Tema claro/escuro/sistema** sem flash no primeiro carregamento.
@@ -89,6 +92,7 @@ abra **https://tasks.localhost**.
 | --- | --- |
 | `taskon-init` | Roda uma vez: composer, migrations, seed. Idempotente. |
 | `taskon-app` | PHP-FPM 8.3. Só ele fala com o banco. |
+| `taskon-scheduler` | `schedule:work`. É quem dispara o resumo diário — sem ele nada sai sozinho. |
 | `taskon-nginx` | Serve `public/` e repassa PHP ao `taskon-app`. É quem tem as labels do Traefik. |
 
 O código é **bind mount** do Windows: editar um `.php` reflete na hora (o
@@ -167,6 +171,47 @@ php artisan migrate:fresh --seed   # zera e repovoa o banco
 E-mails (como o link de recuperação de senha) vão para o **Mailpit central** da
 infra e podem ser lidos em https://mail.localhost. Nada sai para a internet.
 
+---
+
+## Resumo diário por e-mail
+
+Um e-mail por dia às **07:00** com o que passou do prazo, o que vence hoje e o
+que vem nos próximos 7 dias — só as tarefas **atribuídas a você**. Quem não tem
+nada no radar não recebe nada: caixa de entrada limpa vale mais que constância.
+
+Liga e desliga em **Configurações › Notificações**, que também mostra a prévia do
+que o e-mail de hoje diria e tem um botão para mandar um agora.
+
+```bash
+php artisan taskon:daily-digest --dry-run     # quem receberia, sem enviar
+php artisan taskon:daily-digest --user=victor@taskon.test --force
+php artisan taskon:daily-digest               # o que o agendador roda
+```
+
+Quem dispara sozinho é o container `taskon-scheduler`. Fora do Docker, rode
+`php artisan schedule:work` em outro terminal.
+
+### Entregando de verdade pelo Resend
+
+No desenvolvimento o resumo cai no Mailpit e você confere o layout em
+https://mail.localhost. Para sair pela internet, no `.env`:
+
+```dotenv
+MAIL_MAILER=resend
+RESEND_API_KEY=re_xxxxxxxxxxxx
+MAIL_FROM_ADDRESS="taskon@seudominio.com"
+```
+
+E `docker compose up -d` de novo (o compose repassa as duas variáveis aos
+containers). Um detalhe que custa tempo: enquanto o domínio não estiver
+verificado no painel do Resend, a API **só** aceita `onboarding@resend.dev` como
+remetente e **só** entrega para o e-mail da sua conta. Qualquer outro par
+devolve 403 — o comando marca a linha com `✗` e o motivo aparece em
+`storage/logs`.
+
+> Com `MAIL_MAILER=resend` **todo** e-mail passa a ir pela API, inclusive o link
+> de recuperação de senha. O Mailpit deixa de ver qualquer coisa.
+
 > ⚠️ O `MAIL_HOST` é **`mailpit-central`**, não `mailpit`. Três containers
 > respondem pelo nome `mailpit` na rede `web` (o central, o do `feedpass` e o do
 > `encomendas`) e o DNS do Docker faz round-robin entre eles — o e-mail cairia na
@@ -179,11 +224,13 @@ infra e podem ser lidos em https://mail.localhost. Nada sai para a internet.
 
 ```
 app/
+├── Console/Commands/     # taskon:daily-digest
 ├── Http/Controllers/     # orquestração: autoriza → valida → persiste → redireciona
 ├── Http/Resources/       # contrato de saída, espelha resources/js/types
+├── Mail/                 # DailyDigest (view em resources/views/mail/)
 ├── Models/               # Eloquent puro
 ├── Policies/             # BoardPolicy governa tudo que pertence a um quadro
-└── Support/              # ActivityLogger, DemoBoardBuilder
+└── Support/              # ActivityLogger, DemoBoardBuilder, TaskDigest
 
 docker/
 ├── php/                  # imagem PHP-FPM 8.3 + entrypoint e init idempotentes

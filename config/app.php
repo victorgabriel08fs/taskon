@@ -63,9 +63,15 @@ return [
     | will be used by the PHP date and date-time functions. The timezone
     | is set to "UTC" by default as it is suitable for most use cases.
     |
+    | ⚠️ Aqui NÃO é UTC de propósito. O <input type="datetime-local"> do prazo
+    | manda uma data sem fuso ("2026-08-13T09:00") e o Laravel a interpreta
+    | neste fuso. Com UTC, escolher 09:00 gravava 09:00Z e a interface devolvia
+    | 06:00 — três horas a menos, sem erro nenhum. O resumo diário depende do
+    | mesmo alinhamento: em UTC, "vence hoje" começaria às 21:00 de ontem.
+    |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => env('APP_TIMEZONE', 'America/Sao_Paulo'),
 
     /*
     |--------------------------------------------------------------------------

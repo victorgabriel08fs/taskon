@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Palette, ShieldCheck, UserRound } from 'lucide-react';
+import { Bell, Palette, ShieldCheck, UserRound } from 'lucide-react';
 import type { ReactNode } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 const TABS = [
     { href: '/settings/profile', label: 'Perfil', icon: UserRound },
     { href: '/settings/password', label: 'Senha', icon: ShieldCheck },
+    { href: '/settings/notifications', label: 'Notificações', icon: Bell },
     { href: '/settings/appearance', label: 'Aparência', icon: Palette },
 ];
 

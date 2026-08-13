@@ -47,9 +47,14 @@ x-php-env: &php-env
   # do Docker faz round-robin entre eles — o e-mail cai numa caixa aleatória,
   # sem erro nenhum. O alias exclusivo foi criado no compose da infra.
   # Detalhes na seção 10.4 do BOAS_PRATICAS.md.
-  MAIL_MAILER: smtp
+  #
+  # MAIL_MAILER=resend no .env troca a entrega para a API do Resend e o Mailpit
+  # deixa de ver qualquer coisa — inclusive o resumo diário. Ver README.
+  MAIL_MAILER: ${MAIL_MAILER:-smtp}
   MAIL_HOST: mailpit-central
   MAIL_PORT: 1025
+  MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-taskon@localhost}
+  RESEND_API_KEY: ${RESEND_API_KEY:-}
 
   # ⚠️ Fica 'false' de propósito. O redirect global HTTP→HTTPS da infra (FASE 2
   # no traefik.yml) ainda está desligado, então http://tasks.localhost continua
@@ -96,6 +101,27 @@ services:
     <<: *php-service
     container_name: taskon-app
     restart: unless-stopped
+    depends_on:
+      taskon-init:
+        condition: service_completed_successfully
+
+  # ---------------------------------------------------------------- agendador
+  # Sem este serviço o resumo diário nunca dispara sozinho — o Laravel não tem
+  # relógio próprio, ele depende de alguém chamando o schedule.
+  #
+  # `schedule:work` é um laço em PHP que acorda a cada minuto; num servidor de
+  # verdade o certo seria um cron chamando `schedule:run`, mas aqui o objetivo é
+  # subir tudo com um `docker compose up` só.
+  #
+  # O horário do disparo (config/taskon.php › digest.at) é interpretado no fuso
+  # do app, não no do container.
+  taskon-scheduler:
+    <<: *php-service
+    container_name: taskon-scheduler
+    command: ["php", "artisan", "schedule:work"]
+    restart: unless-stopped
+    stop_signal: SIGTERM
+    stop_grace_period: 30s
     depends_on:
       taskon-init:
         condition: service_completed_successfully
