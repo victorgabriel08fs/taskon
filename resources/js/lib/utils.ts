@@ -50,14 +50,29 @@ export function formatRelative(iso: string | null | undefined): string {
 
 export type DueState = 'none' | 'upcoming' | 'soon' | 'overdue' | 'done';
 
+/**
+ * O corte é a VIRADA DO DIA, não a hora marcada — o mesmo do backend
+ * (App\Support\TaskDigest). Um card para hoje às 10:00 segue "de hoje" às
+ * 11:00; vira "vencido" só na virada da meia-noite.
+ *
+ * Se as duas pontas divergirem, o selo vermelho do card contradiz o número do
+ * painel na mesma tela.
+ */
 export function dueState(dueAt: string | null, completedAt: string | null): DueState {
     if (completedAt) return 'done';
     if (!dueAt) return 'none';
 
-    const diff = new Date(dueAt).getTime() - Date.now();
+    const due = new Date(dueAt);
 
-    if (diff < 0) return 'overdue';
-    if (diff < 86_400_000) return 'soon';
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    if (due < startOfToday) return 'overdue';
+
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+
+    if (due <= endOfToday) return 'soon';
 
     return 'upcoming';
 }

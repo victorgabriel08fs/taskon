@@ -34,9 +34,21 @@ class BoardListController extends Controller
         $validated = $request->validate([
             'title' => ['sometimes', 'required', 'string', 'max:120'],
             'card_limit' => ['nullable', 'integer', 'min:1', 'max:999'],
+            'is_done' => ['sometimes', 'boolean'],
         ]);
 
+        $becameDone = ($validated['is_done'] ?? false) && ! $list->is_done;
+
         $list->update($validated);
+
+        // Marcar a coluna depois de ela já estar cheia precisa alcançar quem
+        // está lá dentro: senão a pessoa marca "Concluído" e os cards continuam
+        // contando como abertos (e vencidos) no painel.
+        if ($becameDone) {
+            $list->cards()->whereNull('completed_at')->whereNull('archived_at')->update([
+                'completed_at' => now(),
+            ]);
+        }
 
         return back();
     }

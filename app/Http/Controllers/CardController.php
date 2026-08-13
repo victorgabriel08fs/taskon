@@ -100,9 +100,18 @@ class CardController extends Controller
         ]);
 
         $fromList = $card->list;
+        $toList = BoardList::findOrFail($validated['board_list_id']);
+        $crossed = $this->completionCrossing($fromList, $toList);
 
-        DB::transaction(function () use ($card, $validated) {
-            $card->board_list_id = (int) $validated['board_list_id'];
+        DB::transaction(function () use ($card, $validated, $toList, $crossed) {
+            $card->board_list_id = $toList->id;
+
+            if ($crossed === 'completed' && $card->completed_at === null) {
+                $card->completed_at = now();
+            } elseif ($crossed === 'reopened' && $card->completed_at !== null) {
+                $card->completed_at = null;
+            }
+
             $card->save();
 
             $allowed = Card::query()
@@ -118,18 +127,41 @@ class CardController extends Controller
             }
         });
 
-        $toList = BoardList::find($validated['board_list_id']);
-
-        if ($fromList && $toList && $fromList->id !== $toList->id) {
+        if ($fromList && $fromList->id !== $toList->id) {
             ActivityLogger::log(
                 $card->board,
                 'card.moved',
                 "moveu {$card->title} de {$fromList->title} para {$toList->title}",
                 $card,
             );
+
+            if ($crossed !== null) {
+                ActivityLogger::log(
+                    $card->board,
+                    $crossed === 'completed' ? 'card.completed' : 'card.reopened',
+                    ($crossed === 'completed' ? 'concluiu ' : 'reabriu ').$card->title,
+                    $card,
+                );
+            }
         }
 
         return back();
+    }
+
+    /**
+     * O card cruzou a fronteira da coluna de conclusão?
+     *
+     * Só o cruzamento mexe em completed_at. Mover entre duas colunas comuns não
+     * pode desmarcar um card que a pessoa concluiu no próprio card — a
+     * caixinha do modal é uma decisão manual, e arrastar não deve desfazê-la.
+     */
+    private function completionCrossing(?BoardList $from, BoardList $to): ?string
+    {
+        if ($from === null || $from->id === $to->id || $from->is_done === $to->is_done) {
+            return null;
+        }
+
+        return $to->is_done ? 'completed' : 'reopened';
     }
 
     public function toggleLabel(Card $card, int $labelId): RedirectResponse

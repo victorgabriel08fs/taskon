@@ -42,6 +42,12 @@ final class TaskDigest
     {
         $now ??= CarbonImmutable::now();
 
+        // A fronteira entre "vencida" e "vence hoje" é a VIRADA DO DIA, não a
+        // hora marcada. Um card para hoje às 10:00 continua sendo "de hoje" às
+        // 11:00 — chamá-lo de vencido às 10:01 transforma o painel inteiro em
+        // vermelho no meio da manhã e esvazia o sinal de quem está de fato
+        // atrasado há dias.
+        $startOfToday = $now->startOfDay();
         $endOfToday = $now->endOfDay();
         $horizon = $now->addDays((int) config('taskon.digest.horizon_days'))->endOfDay();
 
@@ -61,8 +67,8 @@ final class TaskDigest
         return new self(
             user: $user,
             now: $now,
-            overdue: $due->filter(fn (Card $card) => $card->due_at->lt($now))->values(),
-            today: $due->filter(fn (Card $card) => $card->due_at->gte($now) && $card->due_at->lte($endOfToday))->values(),
+            overdue: $due->filter(fn (Card $card) => $card->due_at->lt($startOfToday))->values(),
+            today: $due->filter(fn (Card $card) => $card->due_at->gte($startOfToday) && $card->due_at->lte($endOfToday))->values(),
             upcoming: $due->filter(fn (Card $card) => $card->due_at->gt($endOfToday))->values(),
             completed: $completed,
             openCount: self::assignedTo($user)->whereNull('cards.completed_at')->count(),

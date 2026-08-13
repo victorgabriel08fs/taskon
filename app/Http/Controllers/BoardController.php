@@ -65,7 +65,14 @@ class BoardController extends Controller
             }
 
             foreach (['A fazer', 'Em andamento', 'Concluído'] as $index => $title) {
-                $board->lists()->create(['title' => $title, 'position' => $index + 1]);
+                $board->lists()->create([
+                    'title' => $title,
+                    'position' => $index + 1,
+                    // Arrastar para cá marca o card como concluído. Sem isso, a
+                    // coluna seria só um nome e o painel contaria os cards de
+                    // lá como abertos.
+                    'is_done' => $title === 'Concluído',
+                ]);
             }
 
             ActivityLogger::log($board, 'board.created', "criou o quadro {$board->title}");

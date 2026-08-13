@@ -95,6 +95,8 @@ class DashboardController extends Controller
      */
     private function breakdown(User $user, CarbonImmutable $now): array
     {
+        // Mesmas fronteiras do TaskDigest: o dia, não a hora. Ver o comentário lá.
+        $startOfToday = $now->startOfDay();
         $endOfToday = $now->endOfDay();
         $horizon = $now->addDays((int) config('taskon.digest.horizon_days'))->endOfDay();
 
@@ -104,8 +106,8 @@ class DashboardController extends Controller
             ->pluck('due_at');
 
         return [
-            'overdue' => $dues->filter(fn ($due) => $due !== null && $due->lt($now))->count(),
-            'today' => $dues->filter(fn ($due) => $due !== null && $due->gte($now) && $due->lte($endOfToday))->count(),
+            'overdue' => $dues->filter(fn ($due) => $due !== null && $due->lt($startOfToday))->count(),
+            'today' => $dues->filter(fn ($due) => $due !== null && $due->gte($startOfToday) && $due->lte($endOfToday))->count(),
             'upcoming' => $dues->filter(fn ($due) => $due !== null && $due->gt($endOfToday) && $due->lte($horizon))->count(),
             'later' => $dues->filter(fn ($due) => $due !== null && $due->gt($horizon))->count(),
             'none' => $dues->filter(fn ($due) => $due === null)->count(),
@@ -171,7 +173,8 @@ class DashboardController extends Controller
                 'cards as overdue_count' => fn (Builder $q) => $q
                     ->whereNull('cards.archived_at')
                     ->whereNull('cards.completed_at')
-                    ->where('cards.due_at', '<', $now),
+                    // startOfDay, não $now: o mesmo corte do resto do painel.
+                    ->where('cards.due_at', '<', $now->startOfDay()),
             ])
             ->orderByDesc('total_count')
             ->orderBy('boards.title')

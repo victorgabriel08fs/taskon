@@ -2,7 +2,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { router } from '@inertiajs/react';
-import { GripVertical, MoreHorizontal, Trash2 } from 'lucide-react';
+import { CircleCheckBig, GripVertical, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { AddCard } from '@/components/board/add-card';
 import { CardItem } from '@/components/board/card-item';
@@ -99,6 +99,17 @@ export function ListColumn({ list, board, cards, onOpenCard, onDelete, filtered 
                     >
                         {list.title}
                     </button>
+                )}
+
+                {/* Sinaliza a coluna que conclui o card ao receber um arrasto —
+                    sem isso o comportamento seria invisível até acontecer. */}
+                {list.is_done && (
+                    <span
+                        title="Cards arrastados para cá são marcados como concluídos"
+                        className="shrink-0 text-success"
+                    >
+                        <CircleCheckBig className="size-3.5" />
+                    </span>
                 )}
 
                 <span
@@ -239,6 +250,19 @@ function ListMenu({
                     {list.card_limit ? `Limite: ${list.card_limit} cards` : 'Definir limite de cards'}
                 </PopoverItem>
             )}
+
+            <PopoverItem
+                icon={<CircleCheckBig className={cn('size-4', list.is_done && 'text-success')} />}
+                onClick={() =>
+                    router.patch(
+                        `/lists/${list.id}`,
+                        { is_done: !list.is_done },
+                        { preserveScroll: true, preserveState: true, only: ['board'] },
+                    )
+                }
+            >
+                {list.is_done ? 'Não concluir mais aqui' : 'Concluir cards nesta coluna'}
+            </PopoverItem>
 
             <div className="my-1 h-px bg-border" />
 

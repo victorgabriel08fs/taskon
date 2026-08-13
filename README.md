@@ -19,6 +19,7 @@
   (dono / admin / membro).
 - **Listas e cards** com arrastar e soltar de verdade — entre colunas,
   reordenando colunas, com auto-scroll nas bordas e suporte a teclado.
+  A coluna marcada com ✓ conclui o card que receber (e reabre o que sair).
 - **Cards completos**: descrição, etiquetas coloridas, responsáveis, prazo com
   destaque de atraso, capa colorida, checklists com barra de progresso,
   comentários e histórico.

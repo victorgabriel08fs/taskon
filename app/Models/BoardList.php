@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['title', 'position', 'card_limit'])]
+#[Fillable(['title', 'position', 'card_limit', 'is_done'])]
 class BoardList extends Model
 {
     /** @use HasFactory<BoardListFactory> */
@@ -20,6 +20,7 @@ class BoardList extends Model
         return [
             'position' => 'float',
             'archived_at' => 'datetime',
+            'is_done' => 'boolean',
         ];
     }
 

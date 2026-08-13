@@ -17,6 +17,7 @@ class BoardListResource extends JsonResource
             'title' => $this->title,
             'position' => $this->position,
             'card_limit' => $this->card_limit,
+            'is_done' => (bool) $this->is_done,
             'cards' => CardResource::collection($this->whenLoaded('cards')),
         ];
     }

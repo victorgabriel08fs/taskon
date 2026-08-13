@@ -64,6 +64,7 @@ class DemoBoardBuilder
                 $list = $board->lists()->create([
                     'title' => $listTitle,
                     'position' => ++$listPosition,
+                    'is_done' => $listTitle === 'Concluído',
                 ]);
 
                 foreach ($cards as $index => [$cardTitle, $cardLabels, $dueAt]) {

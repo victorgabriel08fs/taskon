@@ -117,6 +117,8 @@ export interface BoardList {
     title: string;
     position: number;
     card_limit: number | null;
+    /** Soltar um card aqui marca `completed_at`; tirar de cá limpa. */
+    is_done: boolean;
     cards: Card[];
 }
 

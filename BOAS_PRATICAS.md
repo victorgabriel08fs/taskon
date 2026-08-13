@@ -856,6 +856,53 @@ requisição nem chega ao controller. A versão vem do middleware —
 `(new HandleInertiaRequests)->version(request())` —, porque o facade só a
 conhece durante um request.
 
+### 12.8 "Vencida" é o dia, não a hora
+
+Um card marcado para **hoje às 10:00** continua sendo "de hoje" às 11:00. Ele só
+vira vencido na virada da meia-noite.
+
+```php
+$startOfToday = $now->startOfDay();
+
+overdue: $card->due_at->lt($startOfToday)
+today:   $card->due_at->between($startOfToday, $endOfToday)
+```
+
+Comparar com `$now` cru parece mais exato e é pior de usar: a tela ficaria
+vermelha no meio da manhã e o card de hoje disputaria atenção com o que está
+atrasado há três dias. Quando tudo é urgente, nada é.
+
+A regra existe **duas vezes** — em [`TaskDigest`](app/Support/TaskDigest.php) e
+em [`dueState()`](resources/js/lib/utils.ts) — porque o selo do card é decidido
+no cliente e o número do painel no servidor. Mexeu em uma, mexa na outra: senão
+o mesmo card aparece vermelho ao lado de um contador que o chama de "hoje".
+
+### 12.9 Coluna de conclusão: `board_lists.is_done`
+
+Arrastar um card para uma coluna marcada com `is_done` grava `completed_at`;
+tirar de lá limpa. Sem isso, "Concluído" era só um nome: o painel contava o card
+como aberto e, se tivesse prazo, como vencido.
+
+O que a regra **não** faz é igualmente importante — só o **cruzamento** da
+fronteira mexe em `completed_at`:
+
+| Movimento | `completed_at` |
+| --- | --- |
+| comum → conclusão | grava agora |
+| conclusão → comum | limpa |
+| comum → comum | não toca |
+| conclusão → conclusão | não toca |
+
+Mover entre duas colunas comuns não pode desmarcar um card que a pessoa
+concluiu na caixinha do modal. A caixinha é uma decisão manual; arrastar não a
+desfaz.
+
+Marcar uma coluna já cheia como "de conclusão" alcança quem está lá dentro — o
+contrário deixaria a pessoa marcando a coluna e os cards continuando abertos.
+A migration faz o mesmo de uma vez para quem já tinha uma coluna chamada
+"Concluído", "Done", "Feito" e afins, usando `updated_at` como aproximação de
+quando o card chegou lá. Daqui para a frente quem manda é a flag, não o nome.
+
 ---
 
 ## 13. O que ficou de fora (e como fazer)
