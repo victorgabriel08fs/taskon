@@ -1,0 +1,48 @@
+import { Head } from '@inertiajs/react';
+import { Monitor, Moon, Sun } from 'lucide-react';
+import { useAppearance } from '@/hooks/use-appearance';
+import SettingsLayout from '@/layouts/settings-layout';
+import { cn } from '@/lib/utils';
+import type { Appearance } from '@/types';
+
+const OPTIONS: { value: Appearance; icon: typeof Sun; label: string; hint: string }[] = [
+    { value: 'light', icon: Sun, label: 'Claro', hint: 'Fundo branco, ideal com muita luz.' },
+    { value: 'dark', icon: Moon, label: 'Escuro', hint: 'Contraste suave para longas sessões.' },
+    { value: 'system', icon: Monitor, label: 'Sistema', hint: 'Segue a preferência do Windows.' },
+];
+
+export default function AppearanceSettings() {
+    const { appearance, updateAppearance } = useAppearance();
+
+    return (
+        <SettingsLayout title="Aparência" description="A escolha fica salva neste navegador.">
+            <Head title="Aparência" />
+
+            <div className="grid gap-4 sm:grid-cols-3">
+                {OPTIONS.map(({ value, icon: Icon, label, hint }) => (
+                    <button
+                        key={value}
+                        type="button"
+                        onClick={() => updateAppearance(value)}
+                        className={cn(
+                            'group rounded-xl p-4 text-left ring-1 transition-all duration-200',
+                            'hover:-translate-y-0.5 hover:shadow-[var(--shadow-card)] active:translate-y-0',
+                            appearance === value
+                                ? 'bg-primary-soft ring-2 ring-primary'
+                                : 'bg-surface ring-border hover:ring-primary/40',
+                        )}
+                    >
+                        <Icon
+                            className={cn(
+                                'size-5 transition-transform duration-300 group-hover:scale-110',
+                                appearance === value ? 'text-primary' : 'text-muted-fg',
+                            )}
+                        />
+                        <p className="mt-3 text-sm font-semibold">{label}</p>
+                        <p className="mt-0.5 text-xs text-muted-fg">{hint}</p>
+                    </button>
+                ))}
+            </div>
+        </SettingsLayout>
+    );
+}
