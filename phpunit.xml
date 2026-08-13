@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-         bootstrap="vendor/autoload.php"
+         bootstrap="tests/bootstrap.php"
          colors="true"
 >
     <testsuites>
@@ -23,6 +23,12 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
+        <!--
+            ⚠️ Estas linhas NÃO bastam dentro do container: o <php> do PHPUnit não
+            sobrescreve $_SERVER, que é de onde o env() do Laravel lê primeiro.
+            Quem garante o banco de teste é tests/bootstrap.php — leia o
+            comentário de lá antes de mexer aqui.
+        -->
         <env name="DB_CONNECTION" value="mysql"/>
         <env name="DB_DATABASE" value="taskon_test"/>
         <env name="DB_URL" value=""/>

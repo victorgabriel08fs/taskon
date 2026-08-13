@@ -1,0 +1,16 @@
+# O contexto de build é só ./docker/php (ver docker-compose.yml), então este
+# arquivo quase não é exercitado — ele existe para o caso de alguém rodar
+# `docker build .` na raiz e acabar mandando node_modules/ para o daemon.
+.git
+.github
+node_modules
+vendor
+public/build
+public/hot
+storage/framework/cache
+storage/framework/sessions
+storage/framework/views
+storage/logs
+database/database.sqlite
+.env
+.phpunit.result.cache

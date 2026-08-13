@@ -15,6 +15,17 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Atrás do Traefik o TLS termina no proxy e o container recebe HTTP puro.
+        // Sem confiar no X-Forwarded-Proto, o Laravel gera link http:// dentro de
+        // página https:// e o navegador bloqueia o CSS/JS como mixed content —
+        // o sintoma é "abriu sem estilo", que parece erro de build e não é.
+        // Faixas privadas: as bridges do Docker Desktop ficam em 172.16.0.0/12.
+        $middleware->trustProxies(at: [
+            '10.0.0.0/8',
+            '172.16.0.0/12',
+            '192.168.0.0/16',
+        ]);
+
         $middleware->encryptCookies(except: ['appearance']);
 
         $middleware->web(append: [

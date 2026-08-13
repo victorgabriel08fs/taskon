@@ -43,6 +43,7 @@ reaproveitando os mesmos Form Requests e Policies.
 | `resources/js/components/ui` | Primitivos reutilizáveis, sem conhecer o domínio. |
 | `resources/js/components/board` | Componentes que sabem o que é card, lista, etiqueta. |
 | `resources/js/layouts` | Casca das páginas (cabeçalho, navegação, painel de auth). |
+| `docker/` | Imagem PHP-FPM, nginx e scripts de boot. Ver a seção 10. |
 
 ---
 
@@ -462,8 +463,21 @@ $this->get("/boards/{$board->id}")
 O que **não** precisa: getters, relações triviais, componente React que só
 renderiza prop.
 
-Os testes rodam contra o banco `taskon_test` (ver `phpunit.xml`) com
-`RefreshDatabase`. Não aponte para o banco de desenvolvimento.
+Os testes rodam contra o banco `taskon_test` com `RefreshDatabase`.
+
+⚠️ **Quem garante isso é [`tests/bootstrap.php`](tests/bootstrap.php), não o
+`phpunit.xml`.** Dentro do container o compose exporta `DB_DATABASE=taskon` como
+variável de ambiente de verdade, e o bloco `<php>` do PHPUnit — mesmo com
+`force="true"` — só sobrescreve `putenv()` e `$_ENV`. O `$_SERVER` continua com o
+valor do Docker, e é dele que o `env()` do Laravel lê primeiro:
+
+```
+env(DB_DATABASE)='taskon'   getenv='taskon_test'   $_ENV='taskon_test'   $_SERVER='taskon'
+```
+
+Sem o bootstrap, `docker compose exec taskon-app php artisan test` apagava o
+banco de desenvolvimento — em silêncio, com a suíte passando. Ao acrescentar uma
+variável nova ao `docker-compose.yml`, veja se ela precisa entrar na lista de lá.
 
 ---
 
@@ -497,7 +511,125 @@ mesmo commit.
 
 ---
 
-## 10. O que ficou de fora (e como fazer)
+## 10. Integração com a infra do Traefik
+
+O app roda atrás do proxy local e usa os serviços compartilhados da infra. As
+regras abaixo não são preferência: cada uma corresponde a um jeito específico de
+quebrar.
+
+### 10.1 Nenhuma porta publicada, nenhum `entrypoints`
+
+`docker-compose.yml` não tem `ports:`. Quem expõe é o Traefik, pelas labels do
+`taskon-nginx`. E o router **não declara `entrypoints`** — sem essa label ele se
+liga a todos, então o app responde em `http://` e `https://` ao mesmo tempo.
+Escrever `entrypoints=web` o prenderia à porta 80 e ele sumiria em HTTPS com
+"404 page not found".
+
+O TLS vem do entrypoint (`traefik.yml` da infra), então também não existe
+`tls=true` aqui.
+
+### 10.2 TrustProxies **e** APP_URL — os dois
+
+O TLS termina no proxy; o container recebe HTTP puro. Sem `trustProxies` em
+[`bootstrap/app.php`](bootstrap/app.php), o Laravel gera link `http://` dentro de
+página `https://` e o navegador bloqueia CSS/JS como *mixed content*. O sintoma é
+"a página abriu sem estilo", que parece erro de build e não é.
+
+Os dois consertam coisas diferentes:
+
+- **`trustProxies`** → URLs geradas **durante** um request (o `X-Forwarded-Proto`).
+- **`APP_URL`** → URLs geradas **sem** request: fila, e-mail, `artisan`, link de
+  recuperação de senha.
+
+### 10.3 `SESSION_SECURE_COOKIE` fica `false` — por enquanto
+
+O redirect global HTTP→HTTPS da infra (FASE 2 no `traefik.yml`) está desligado,
+então `http://tasks.localhost` continua respondendo. Com o cookie marcado como
+`Secure`, um acesso por `http://` perde a sessão **em silêncio** — o login volta
+para a tela de login sem erro nenhum, e você procura o bug no lugar errado.
+Ligue junto com a FASE 2, não antes.
+
+### 10.4 ⚠️ Nome de serviço na rede `web` é global
+
+Este é o mais traiçoeiro, e custou um e-mail perdido para descobrir.
+
+A rede `web` é compartilhada por **todos** os projetos. Cada container recebe,
+como alias de DNS, o nome do seu serviço no compose. Quando dois projetos
+distintos têm um serviço com o mesmo nome na `web`, o DNS do Docker devolve
+**todos** os IPs e faz round-robin — a conexão vai para um container aleatório,
+sem erro nenhum.
+
+Foi exatamente o que aconteceu ao enviar o e-mail de recuperação de senha:
+
+```
+$ getent hosts mailpit          # de dentro do taskon-app
+172.18.0.10   mailpit           # feedpass-mailpit-1
+172.18.0.3    mailpit           # o central da infra
+172.18.0.15   mailpit           # feedpass-encomendas-mailpit-1
+```
+
+O e-mail foi parar na caixa do `encomendas`. O `mariadb` não tem esse problema
+porque só existe um na `web` (os bancos dos outros projetos vivem em redes
+privadas).
+
+**Como ficou resolvido.** O compose da infra passou a dar ao Mailpit central um
+alias exclusivo, e é para ele que este projeto aponta:
+
+```yaml
+# servidor-docker-traefik/docker-compose.yml
+mailpit:
+  networks:
+    web:
+      aliases:
+        - mailpit-central     # nome que só este container atende
+```
+
+```yaml
+# docker-compose.yml (aqui)
+MAIL_HOST: mailpit-central
+```
+
+O nome `mailpit` continua ambíguo — os outros apps podem migrar quando quiserem.
+
+Duas consequências práticas para qualquer projeto novo na `web`:
+
+1. **Nomeie os serviços com prefixo do projeto** — `taskon-app`, `taskon-nginx`,
+   e não `app`/`nginx`. O `feedpass-nginx-1` já ocupa o alias `nginx` na `web`.
+2. **Antes de depender de um nome da infra**, confira quantos IPs ele resolve.
+   Mais de uma linha = ambiguidade:
+
+```bash
+docker compose exec taskon-app getent hosts mailpit-central
+# 172.18.0.3   mailpit-central          <- um só: pode confiar
+```
+
+### 10.5 `vendor/` em volume, código em bind mount
+
+O código vem por bind mount do Windows, onde cada `stat()` custa alguns
+milissegundos e uma request toca centenas de arquivos. O `vendor/` — a maior
+parte deles — mora num **volume do Docker**, em disco Linux.
+
+O preço: são dois `vendor/` diferentes. O do volume serve o container; o do
+Windows serve a IDE e o `artisan` rodando fora do Docker. Mudou
+`composer.json`? Rode nos dois.
+
+### 10.6 Caches do Laravel são veneno com bind mount
+
+`config:cache` rodado no **host** congela `DB_HOST=127.0.0.1` dentro de
+`bootstrap/cache/` — que é bind mount. O container leria esse arquivo e ignoraria
+o `DB_HOST=mariadb` que o compose injeta. Por isso o
+[`init.sh`](docker/php/init.sh) roda `optimize:clear` **sempre**, e não só na
+primeira vez.
+
+### 10.7 `init.sh` precisa ser idempotente
+
+Ele roda em todo `docker compose up`. `migrate` já é idempotente; o `db:seed`
+**não é** (e-mail é único), então só executa quando não há nenhum usuário — ou
+seja, banco realmente novo.
+
+---
+
+## 11. O que ficou de fora (e como fazer)
 
 | Item | Caminho |
 | --- | --- |

@@ -30,57 +30,117 @@
 
 ---
 
-## Rodando
+## Rodando com Docker — https://tasks.localhost
 
-### Pré-requisitos
+Este é o caminho principal. O app roda atrás do **Traefik** da infra local e usa
+os serviços **compartilhados** dela: o MariaDB (`mariadb`) e o Mailpit
+(`mailpit`). Nenhum banco ou caixa de e-mail sobe junto com o projeto, e nenhuma
+porta é publicada no host — quem expõe é o proxy.
+
+### Pré-requisitos (uma vez)
+
+**1. A infra no ar** — na pasta do `servidor-docker-traefik`:
+
+```bash
+docker network create web     # se ainda não existir
+docker compose up -d
+```
+
+**2. O banco criado** no MariaDB central:
+
+```bash
+docker exec -i mariadb mariadb -uroot -proot -e \
+  "CREATE DATABASE IF NOT EXISTS \`taskon\`      CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   CREATE DATABASE IF NOT EXISTS \`taskon_test\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+```
+
+**3. O certificado cobrindo o domínio** — `tasks.localhost` já foi acrescentado
+à lista `$Dominios` do `gerar-certificados.ps1` da infra, mas o script precisa
+rodar para o certificado ser reemitido:
+
+```powershell
+.\gerar-certificados.ps1      # na pasta da infra; reinicia o Traefik
+```
+
+Depois **feche o navegador por completo** e reabra — F5 não basta, o Chrome só
+relê o repositório de certificados ao iniciar. Sem esse passo o site abre, mas
+com aviso de certificado inválido.
+
+**4. Os assets buildados** (o nginx serve `public/build` direto do disco):
+
+```bash
+npm install
+npm run build
+```
+
+### Subir
+
+```bash
+docker compose up -d
+```
+
+Na primeira vez o serviço `taskon-init` roda `composer install`, `migrate` e o
+seed — acompanhe com `docker compose logs -f taskon-init`. Quando ele terminar,
+abra **https://tasks.localhost**.
+
+### Como está montado
+
+| Container | Papel |
+| --- | --- |
+| `taskon-init` | Roda uma vez: composer, migrations, seed. Idempotente. |
+| `taskon-app` | PHP-FPM 8.3. Só ele fala com o banco. |
+| `taskon-nginx` | Serve `public/` e repassa PHP ao `taskon-app`. É quem tem as labels do Traefik. |
+
+O código é **bind mount** do Windows: editar um `.php` reflete na hora (o
+opcache revalida a cada 2 s). O `vendor/` é a exceção — mora num volume do
+Docker, por performance, e é **separado** do `vendor/` do Windows que a IDE
+enxerga. Mudou `composer.json`? Rode `docker compose exec taskon-app composer install`.
+
+### Comandos do dia a dia
+
+```bash
+docker compose exec taskon-app php artisan <comando>
+docker compose exec taskon-app php artisan test
+docker compose exec taskon-app composer install
+docker compose logs -f taskon-app          # ou https://logs.localhost (Dozzle)
+docker compose restart taskon-app          # depois de mexer em .env
+docker compose down                        # derruba só este projeto
+```
+
+Mudou algo em `public/build`? Rode `npm run build` **no host** — não existe Node
+dentro dos containers. Para hot reload, use o modo sem Docker abaixo.
+
+---
+
+## Rodando sem Docker
+
+Útil para hot reload do Vite, que atrás do HTTPS do proxy seria bloqueado como
+*mixed content*. Aponta para o **mesmo banco e o mesmo Mailpit** — a infra
+publica o MariaDB em `127.0.0.1:3309` e o SMTP do Mailpit em `127.0.0.1:1025`
+justamente para clientes de fora do Docker.
 
 | | Versão usada aqui |
 | --- | --- |
 | PHP | 8.3 (com `pdo_mysql`) |
 | Composer | 2.8 |
 | Node | 22 |
-| MySQL | 8 em `127.0.0.1:3306` |
-
-### Instalação
 
 ```bash
 composer install
 npm install
-
-cp .env.example .env
+cp .env.example .env          # já vem apontando para 127.0.0.1:3309
 php artisan key:generate
+
+php artisan serve             # http://localhost:8000
+npm run dev                   # Vite com hot reload
 ```
 
-Ajuste as credenciais no `.env` e crie os bancos:
+Ou `composer dev`, que sobe servidor, fila e Vite juntos.
 
-```env
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=taskon
-DB_USERNAME=root
-DB_PASSWORD=sua-senha
-```
-
-```sql
-CREATE DATABASE taskon      CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE DATABASE taskon_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
-
-```bash
-php artisan migrate --seed
-```
-
-### Desenvolvimento
-
-Dois terminais:
-
-```bash
-php artisan serve      # http://localhost:8000
-npm run dev            # Vite com hot reload
-```
-
-Ou, se preferir, `composer dev` sobe servidor, fila e Vite juntos.
+> Os dois modos compartilham o banco. O que muda é só o endereço: dentro do
+> container é `mariadb:3306`, fora é `127.0.0.1:3309`. Como o Dotenv do Laravel é
+> imutável, a variável de ambiente que o compose injeta vence o `.env` — por isso
+> o mesmo arquivo serve para os dois.
 
 ### Contas de demonstração
 
@@ -104,8 +164,14 @@ npm run build             # build de produção
 php artisan migrate:fresh --seed   # zera e repovoa o banco
 ```
 
-E-mails (como o link de recuperação de senha) usam o driver `log` em
-desenvolvimento: o conteúdo aparece em `storage/logs/laravel.log`.
+E-mails (como o link de recuperação de senha) vão para o **Mailpit central** da
+infra e podem ser lidos em https://mail.localhost. Nada sai para a internet.
+
+> ⚠️ O `MAIL_HOST` é **`mailpit-central`**, não `mailpit`. Três containers
+> respondem pelo nome `mailpit` na rede `web` (o central, o do `feedpass` e o do
+> `encomendas`) e o DNS do Docker faz round-robin entre eles — o e-mail cairia na
+> caixa do projeto errado. O alias exclusivo foi criado no compose da infra. Ver
+> [BOAS_PRATICAS.md](BOAS_PRATICAS.md#104-️-nome-de-serviço-na-rede-web-é-global).
 
 ---
 
@@ -118,6 +184,10 @@ app/
 ├── Models/               # Eloquent puro
 ├── Policies/             # BoardPolicy governa tudo que pertence a um quadro
 └── Support/              # ActivityLogger, DemoBoardBuilder
+
+docker/
+├── php/                  # imagem PHP-FPM 8.3 + entrypoint e init idempotentes
+└── nginx/                # front do PHP-FPM, com as labels do Traefik no compose
 
 resources/js/
 ├── pages/                # uma pasta por rota (nome = Inertia::render)
@@ -152,6 +222,7 @@ Rotas em [`routes/web.php`](routes/web.php) (quadros),
 **[BOAS_PRATICAS.md](BOAS_PRATICAS.md)** — as convenções do projeto e o porquê
 de cada decisão: autorização pelo agregado, resources como contrato, eager
 loading do quadro, estratégia de ordenação, tokens de tema, regras de animação
-e acessibilidade, e o que ainda falta implementar.
+e acessibilidade, integração com a infra do Traefik (incluindo as armadilhas de
+proxy e de DNS na rede compartilhada), e o que ainda falta implementar.
 
 Leia antes de abrir um PR.
