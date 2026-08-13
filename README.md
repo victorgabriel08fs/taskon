@@ -13,6 +13,8 @@
 
 ## O que tem aqui
 
+- **Painel** com gráficos animados: ritmo de 14 dias, anel de prazos, progresso
+  por quadro, próximos vencimentos e feed de atividade.
 - **Quadros** com 8 fundos em gradiente, favoritos e membros com papéis
   (dono / admin / membro).
 - **Listas e cards** com arrastar e soltar de verdade — entre colunas,
@@ -240,13 +242,17 @@ resources/js/
 ├── pages/                # uma pasta por rota (nome = Inertia::render)
 ├── components/ui/        # primitivos sem conhecimento de domínio
 ├── components/board/     # Kanban: coluna, card, modal, filtros, atividade
+├── components/dashboard/ # gráficos em SVG puro, sem lib de charts
 ├── layouts/              # casca das páginas
 ├── hooks/                # tema, ripple, revelação no scroll
 ├── lib/                  # cn(), formatação de data, paleta
 └── types/                # contrato TypeScript compartilhado
 ```
 
-Rotas em [`routes/web.php`](routes/web.php) (quadros),
+Duas telas, dois endereços: **`/dashboard`** são os números e os gráficos,
+**`/boards`** é a lista de quadros. Depois do login você cai no painel.
+
+Rotas em [`routes/web.php`](routes/web.php) (painel e quadros),
 [`routes/auth.php`](routes/auth.php) e [`routes/settings.php`](routes/settings.php).
 
 ---

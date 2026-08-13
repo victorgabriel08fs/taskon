@@ -1,5 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { LayoutDashboard, LogOut, Settings, UserRound } from 'lucide-react';
+import { ChartNoAxesColumn, LayoutDashboard, LogOut, Settings, SquareKanban, UserRound } from 'lucide-react';
+import { motion } from 'motion/react';
 import type { ReactNode } from 'react';
 import { Avatar } from '@/components/ui/avatar';
 import { Logo } from '@/components/logo';
@@ -15,6 +16,11 @@ interface AppLayoutProps {
     headerSlot?: ReactNode;
     className?: string;
 }
+
+const NAV = [
+    { href: '/dashboard', label: 'Painel', icon: ChartNoAxesColumn },
+    { href: '/boards', label: 'Quadros', icon: SquareKanban },
+];
 
 export default function AppLayout({ children, overlay = false, headerSlot, className }: AppLayoutProps) {
     const user = usePage().props.auth.user;
@@ -37,6 +43,10 @@ export default function AppLayout({ children, overlay = false, headerSlot, class
                 >
                     <Logo invert={overlay} className={cn(overlay && 'drop-shadow')} />
                 </Link>
+
+                {/* No quadro o cabeçalho já é do quadro: o título e as ações
+                    dele ocupam esse espaço, e a navegação sairia sobrando. */}
+                {!overlay && user && <MainNav />}
 
                 <div className="min-w-0 flex-1">{headerSlot}</div>
 
@@ -72,6 +82,11 @@ export default function AppLayout({ children, overlay = false, headerSlot, class
 
                                     <Link href="/dashboard" className="block">
                                         <PopoverItem icon={<LayoutDashboard className="size-4" />}>
+                                            Painel
+                                        </PopoverItem>
+                                    </Link>
+                                    <Link href="/boards" className="block">
+                                        <PopoverItem icon={<SquareKanban className="size-4" />}>
                                             Meus quadros
                                         </PopoverItem>
                                     </Link>
@@ -100,5 +115,45 @@ export default function AppLayout({ children, overlay = false, headerSlot, class
 
             <main className={cn('flex min-h-0 flex-1 flex-col', className)}>{children}</main>
         </div>
+    );
+}
+
+/**
+ * A pílula ativa é um único elemento compartilhado entre os itens (layoutId):
+ * o motion interpola a posição dela de um para o outro, então trocar de aba
+ * desliza em vez de piscar.
+ */
+function MainNav() {
+    const current = usePage().url.split('?')[0];
+
+    return (
+        <nav className="flex shrink-0 items-center gap-0.5 rounded-lg bg-surface-2 p-0.5">
+            {NAV.map(({ href, label, icon: Icon }) => {
+                const active = current === href || (href === '/boards' && current.startsWith('/boards'));
+
+                return (
+                    <Link
+                        key={href}
+                        href={href}
+                        prefetch="hover"
+                        cacheFor="20s"
+                        className={cn(
+                            'relative flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors duration-200',
+                            active ? 'text-foreground' : 'text-muted-fg hover:text-foreground',
+                        )}
+                    >
+                        {active && (
+                            <motion.span
+                                layoutId="nav-pill"
+                                transition={{ type: 'spring', stiffness: 480, damping: 38 }}
+                                className="absolute inset-0 rounded-md bg-surface shadow-sm"
+                            />
+                        )}
+                        <Icon className="relative size-4" />
+                        <span className="relative hidden sm:inline">{label}</span>
+                    </Link>
+                );
+            })}
+        </nav>
     );
 }

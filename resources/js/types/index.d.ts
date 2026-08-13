@@ -90,6 +90,8 @@ export interface Activity {
     properties: Record<string, unknown> | null;
     created_at: string;
     user: User | null;
+    /** Só vem no painel, onde o feed mistura quadros. */
+    board?: { id: number; title: string; background: BoardBackground };
 }
 
 export interface CardDetail {
@@ -144,6 +146,58 @@ export interface BoardSummary {
     cards_count: number;
     done_count: number;
     members: User[];
+}
+
+/* -------------------------------------------------------------------------- */
+/* Painel                                                                      */
+/* -------------------------------------------------------------------------- */
+
+/** Um card visto de fora do quadro — a lista de prazos mistura vários. */
+export interface Deadline {
+    id: number;
+    title: string;
+    due_at: string | null;
+    completed_at: string | null;
+    board_id: number;
+    board_title: string;
+    board_background: BoardBackground;
+    list_title: string;
+}
+
+export interface BoardProgress {
+    id: number;
+    title: string;
+    background: BoardBackground;
+    total: number;
+    done: number;
+    overdue: number;
+}
+
+/** Escala "minhas tarefas": só cards atribuídos ao usuário. */
+export interface DashboardStats {
+    open: number;
+    overdue: number;
+    today: number;
+    upcoming: number;
+    completed_week: number;
+    completed_previous_week: number;
+    boards: number;
+}
+
+/** As fatias do anel. Somadas dão o total de tarefas abertas. */
+export interface DueBreakdown {
+    overdue: number;
+    today: number;
+    upcoming: number;
+    later: number;
+    none: number;
+}
+
+/** Um dia do gráfico de ritmo. Dias parados vêm com zero, não faltando. */
+export interface TrendPoint {
+    date: string;
+    created: number;
+    completed: number;
 }
 
 export interface SharedProps {

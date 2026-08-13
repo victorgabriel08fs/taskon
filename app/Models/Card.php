@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\CardFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -83,5 +84,27 @@ class Card extends Model
     public function activities(): HasMany
     {
         return $this->hasMany(Activity::class)->latest();
+    }
+
+    /**
+     * Cards vivos atribuídos ao usuário, em quadros de que ele ainda participa.
+     *
+     * O segundo whereHas não é redundante: sair de um quadro não apaga a
+     * atribuição dos cards, e sem esse filtro a pessoa continuaria vendo (e
+     * recebendo por e-mail) tarefas de um quadro que já não pode nem abrir.
+     *
+     * É a definição de "minhas tarefas" que o resumo diário e o painel
+     * compartilham — se as duas divergirem, o e-mail vira mentira sobre a tela.
+     *
+     * @param  Builder<Card>  $query
+     */
+    public function scopeAssignedTo(Builder $query, User $user): void
+    {
+        $query
+            ->whereNull('cards.archived_at')
+            ->whereHas('members', fn (Builder $q) => $q->whereKey($user->getKey()))
+            ->whereHas('board', fn (Builder $q) => $q
+                ->whereNull('boards.archived_at')
+                ->whereHas('members', fn (Builder $q) => $q->whereKey($user->getKey())));
     }
 }

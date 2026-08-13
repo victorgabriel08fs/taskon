@@ -70,22 +70,15 @@ final class TaskDigest
     }
 
     /**
-     * Cards vivos atribuídos ao usuário, em quadros de que ele ainda participa.
-     *
-     * O segundo whereHas não é redundante: sair de um quadro não apaga a
-     * atribuição dos cards, e sem esse filtro a pessoa continuaria recebendo
-     * lembretes de um quadro que já não pode nem abrir.
+     * O mesmo recorte de "minhas tarefas" que o painel usa — o scope mora no
+     * model justamente para as duas telas não divergirem.
      *
      * @return Builder<Card>
      */
     private static function assignedTo(User $user): Builder
     {
         return Card::query()
-            ->whereNull('cards.archived_at')
-            ->whereHas('members', fn (Builder $q) => $q->whereKey($user->getKey()))
-            ->whereHas('board', fn (Builder $q) => $q
-                ->whereNull('boards.archived_at')
-                ->whereHas('members', fn (Builder $q) => $q->whereKey($user->getKey())))
+            ->assignedTo($user)
             ->with(['board:id,title,background', 'list:id,title']);
     }
 

@@ -19,7 +19,8 @@ use Inertia\Response;
 class BoardController extends Controller
 {
     /**
-     * Painel: todos os quadros do usuário, favoritos primeiro.
+     * A lista de quadros do usuário, favoritos primeiro. Os números agregados
+     * (e os gráficos) ficam no DashboardController.
      */
     public function index(Request $request): Response
     {
@@ -150,7 +151,7 @@ class BoardController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Quadro excluído.']);
 
-        return redirect()->route('dashboard');
+        return redirect()->route('boards.index');
     }
 
     public function toggleFavorite(Request $request, Board $board): RedirectResponse

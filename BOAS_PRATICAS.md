@@ -38,10 +38,13 @@ reaproveitando os mesmos Form Requests e Policies.
 | `app/Policies` | Autorização. Uma policy por agregado ([`BoardPolicy`](app/Policies/BoardPolicy.php)). |
 | `app/Http/Controllers` | Orquestração fina: valida → autoriza → persiste → redireciona. |
 | `app/Http/Resources` | Contrato de saída. Espelha 1:1 os tipos em `resources/js/types`. |
-| `app/Support` | Serviços sem estado ([`ActivityLogger`](app/Support/ActivityLogger.php), [`DemoBoardBuilder`](app/Support/DemoBoardBuilder.php)). |
+| `app/Support` | Serviços sem estado ([`ActivityLogger`](app/Support/ActivityLogger.php), [`DemoBoardBuilder`](app/Support/DemoBoardBuilder.php), [`TaskDigest`](app/Support/TaskDigest.php)). |
+| `app/Console/Commands` | Tarefas de linha de comando e agendadas. Ver a seção 11. |
+| `app/Mail` | Mailables. A view de cada um em `resources/views/mail/`. |
 | `resources/js/pages` | Uma pasta por rota. O nome do arquivo é o `Inertia::render()`. |
 | `resources/js/components/ui` | Primitivos reutilizáveis, sem conhecer o domínio. |
 | `resources/js/components/board` | Componentes que sabem o que é card, lista, etiqueta. |
+| `resources/js/components/dashboard` | Gráficos em SVG puro e cartões de número. Ver a seção 12. |
 | `resources/js/layouts` | Casca das páginas (cabeçalho, navegação, painel de auth). |
 | `docker/` | Imagem PHP-FPM, nginx e scripts de boot. Ver a seção 10. |
 
@@ -737,7 +740,125 @@ isso. Se o volume crescer, `DailyDigest implements ShouldQueue` e o serviço
 
 ---
 
-## 12. O que ficou de fora (e como fazer)
+## 12. Painel: gráficos sem biblioteca
+
+[`DashboardController`](app/Http/Controllers/DashboardController.php) alimenta
+[`pages/dashboard.tsx`](resources/js/pages/dashboard.tsx), e os gráficos vivem em
+[`components/dashboard/`](resources/js/components/dashboard/).
+
+### 12.1 Duas escalas, ditas em voz alta
+
+O painel mistura dois recortes, e cada bloco diz qual está usando:
+
+| Bloco | Escala |
+| --- | --- |
+| Cartões do topo, anel de prazos, próximos prazos | **Suas tarefas** — só cards atribuídos (`Card::assignedTo`) |
+| Ritmo, progresso por quadro, atividade | **Seus quadros** — tudo, inclusive o trabalho dos colegas |
+
+Sem essa distinção o número não significa nada: "12 tarefas abertas" é uma coisa
+se são suas e outra se é o quadro inteiro do time.
+
+O `scopeAssignedTo` mora no model, não em cada consulta, porque é a **mesma**
+definição que o resumo diário usa. Se as duas divergirem, o e-mail passa a
+mentir sobre a tela — e ninguém confere isso até alguém reclamar.
+
+### 12.2 Agregue no banco, não no navegador
+
+Nenhuma consulta do painel traz linha que a tela não vá desenhar. `withCount`
+com alias para os totais por quadro, `GROUP BY DATE(...)` para o gráfico de
+ritmo. A exceção é o anel, que faz `pluck('due_at')` e separa em PHP:
+
+```php
+$dues = Card::query()->assignedTo($user)->whereNull('cards.completed_at')->pluck('due_at');
+```
+
+Uma consulta trazendo só uma coluna, em vez de cinco `COUNT`s com `CASE WHEN` —
+e, de quebra, as fronteiras entre "hoje" e "próximos dias" ficam sendo
+exatamente o mesmo código de comparação do `TaskDigest`, não uma tradução dele
+para SQL.
+
+Vale enquanto o volume for de centenas de cards. Passando disso, vire `SUM(CASE
+WHEN ...)` — e escreva um teste que trave os números antes de mexer.
+
+### 12.3 Dias sem movimento entram com zero
+
+```php
+return collect(range(0, self::TREND_DAYS - 1))->map(fn ($offset) => [...]);
+```
+
+O `GROUP BY` só devolve os dias em que aconteceu alguma coisa. Plotar o
+resultado direto encurtaria o eixo e o domingo parado viraria uma linha reta
+entre sexta e segunda — o gráfico mostraria um ritmo constante que não existiu.
+
+### 12.4 SVG na mão, sem lib de gráfico
+
+Nenhuma dependência nova. Os motivos, em ordem:
+
+1. Uma lib de charts custa 50–150 kB gzip para desenhar quatro formas.
+2. Tema claro/escuro em runtime: o SVG usa `var(--primary)`, `var(--danger)`
+   direto no atributo `stroke`, então trocar de tema já troca o gráfico. Com
+   lib, isso vira remontagem do componente com um objeto de tema.
+3. As animações são as mesmas do resto do app (`motion`), com o mesmo easing.
+
+O que isso exige em troca:
+
+- **Curva com tangente horizontal**, não spline solto. Um Catmull-Rom passa
+  acima do maior valor entre dois picos; num gráfico de contagem isso é mentira
+  visual — desenha 4 onde o dado diz 3.
+- **`vectorEffect="non-scaling-stroke"`** nas linhas: o `viewBox` escala com a
+  largura do cartão e a espessura do traço iria junto.
+- **`new Date('2026-08-13')` é UTC.** No fuso de São Paulo isso é 21:00 do dia
+  12, e o rótulo do eixo mostraria o dia anterior. Todo parse de data curta no
+  cliente usa `` new Date(`${date}T00:00:00`) ``.
+
+### 12.5 Número que sobe sem re-renderizar
+
+[`useCountUp`](resources/js/hooks/use-count-up.ts) devolve um `MotionValue`, não
+um estado:
+
+```tsx
+const count = useCountUp(value);
+return <motion.p>{count}</motion.p>;
+```
+
+O motion escreve direto no nó de texto. Com `useState` seriam ~55 renders do
+componente por número, quatro números na tela ao mesmo tempo. Mesma ideia no
+anel: o `strokeDasharray` cresce por `useMotionTemplate`, não por estado.
+
+### 12.6 `prefers-reduced-motion` não chega ao JS
+
+O bloco global em `app.css` zera **transição e animação CSS**. Ele não alcança
+nada que o `motion` anime por JS. Onde a animação é em JS, a checagem é
+explícita:
+
+```tsx
+const reduced = useReducedMotion();
+if (reduced) { raw.set(value); return; }
+```
+
+Sem isso, quem pediu menos movimento ao sistema continua vendo números girando e
+arcos crescendo.
+
+### 12.7 `assertInertia` não funciona em requisição parcial
+
+Achado ao testar a prop adiada. `AssertableInertia::fromTestResponse` faz
+`assertViewHas('page')` — ele espera a **view HTML**. A requisição parcial
+devolve JSON puro, e a falha aparece como um enigmático "Not a valid Inertia
+response". Nesses casos, asserção em JSON mesmo:
+
+```php
+->assertJsonPath('component', 'dashboard')
+->assertJsonStructure(['props' => ['activity']]);
+```
+
+E o `X-Inertia-Version` é obrigatório: sem ele a resposta é **409** e a
+requisição nem chega ao controller. A versão vem do middleware —
+`(new HandleInertiaRequests)->version(request())` —, porque o facade só a
+conhece durante um request.
+
+---
+
+## 13. O que ficou de fora (e como fazer)
 
 | Item | Caminho |
 | --- | --- |

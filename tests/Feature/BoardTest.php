@@ -11,14 +11,14 @@ class BoardTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_dashboard_lists_only_boards_the_user_belongs_to(): void
+    public function test_the_board_list_shows_only_boards_the_user_belongs_to(): void
     {
         $user = User::factory()->create();
         $mine = Board::factory()->create(['owner_id' => $user->id, 'title' => 'Meu quadro']);
         Board::factory()->create(['title' => 'Quadro de outra pessoa']);
 
         $this->actingAs($user)
-            ->get('/dashboard')
+            ->get('/boards')
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('boards/index')
@@ -84,7 +84,7 @@ class BoardTest extends TestCase
 
         $this->actingAs($admin)->delete("/boards/{$board->id}")->assertForbidden();
 
-        $this->actingAs($board->owner)->delete("/boards/{$board->id}")->assertRedirect('/dashboard');
+        $this->actingAs($board->owner)->delete("/boards/{$board->id}")->assertRedirect('/boards');
         $this->assertDatabaseMissing('boards', ['id' => $board->id]);
     }
 

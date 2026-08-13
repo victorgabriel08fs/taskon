@@ -6,6 +6,7 @@ use App\Http\Controllers\BoardMemberController;
 use App\Http\Controllers\CardController;
 use App\Http\Controllers\ChecklistController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LabelController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -13,13 +14,15 @@ use Inertia\Inertia;
 Route::get('/', fn () => Inertia::render('welcome'))->name('home');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', [BoardController::class, 'index'])->name('dashboard');
+    // Números, gráficos e prazos. É a tela de pouso depois do login.
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     /*
     |--------------------------------------------------------------------------
     | Quadros
     |--------------------------------------------------------------------------
     */
+    Route::get('/boards', [BoardController::class, 'index'])->name('boards.index');
     Route::post('/boards', [BoardController::class, 'store'])->name('boards.store');
     Route::get('/boards/{board}', [BoardController::class, 'show'])->name('boards.show');
     Route::patch('/boards/{board}', [BoardController::class, 'update'])->name('boards.update');
