@@ -15,11 +15,26 @@ export function LogoMark({ className }: { className?: string }) {
     );
 }
 
-export function Logo({ className, invert = false }: { className?: string; invert?: boolean }) {
+export function Logo({
+    className,
+    invert = false,
+    compact = false,
+}: {
+    className?: string;
+    invert?: boolean;
+    /** Esconde o nome abaixo de `sm` — no cabeçalho do app a linha é disputada. */
+    compact?: boolean;
+}) {
     return (
         <span className={cn('inline-flex items-center gap-2.5', className)}>
             <LogoMark />
-            <span className={cn('text-lg font-bold tracking-tight', invert ? 'text-white' : 'text-foreground')}>
+            <span
+                className={cn(
+                    'text-lg font-bold tracking-tight',
+                    compact && 'hidden sm:inline',
+                    invert ? 'text-white' : 'text-foreground',
+                )}
+            >
                 Taskon
             </span>
         </span>

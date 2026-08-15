@@ -9,8 +9,11 @@ import {
     History,
     MessageSquare,
     Paintbrush,
+    Pause,
+    Play,
     Plus,
     Tags,
+    Timer,
     Trash2,
     UserRound,
     X,
@@ -22,7 +25,9 @@ import { Button } from '@/components/ui/button';
 import { useConfirm } from '@/components/ui/confirm';
 import { Modal } from '@/components/ui/modal';
 import { Popover } from '@/components/ui/popover';
+import { usePomodoro } from '@/hooks/use-pomodoro';
 import { COLOR_CHIP, COLOR_SOLID } from '@/lib/palette';
+import { clock, focusOnCard, pausePomodoro, startPomodoro } from '@/lib/pomodoro';
 import { cn, formatRelative, toDateTimeLocal } from '@/lib/utils';
 import type { Board, CardDetail, ColorKey } from '@/types';
 
@@ -247,7 +252,13 @@ function CardModalBody({
 
                 {/* ------------------------------------------------------ barra lateral */}
                 <aside className="space-y-1.5">
-                    <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-fg">Adicionar</p>
+                    <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-fg">Foco</p>
+
+                    <FocusButton card={card} />
+
+                    <p className="px-1 pt-3 text-[11px] font-semibold uppercase tracking-wide text-muted-fg">
+                        Adicionar
+                    </p>
 
                     <SidePopover icon={<UserRound className="size-4" />} label="Membros" title="Membros do card">
                         {() =>
@@ -372,6 +383,41 @@ function CardModalBody({
                 </aside>
             </div>
         </div>
+    );
+}
+
+/**
+ * Amarra o cronômetro do cabeçalho a este card. Enquanto o foco é dele, o
+ * próprio botão vira o play/pause do ciclo — abrir o widget vira opcional.
+ */
+function FocusButton({ card }: { card: CardDetail }) {
+    const pomodoro = usePomodoro();
+    const mine = pomodoro.phase === 'focus' && pomodoro.task?.cardId === card.id;
+
+    if (!mine) {
+        return (
+            <button
+                type="button"
+                onClick={() => focusOnCard({ cardId: card.id, boardId: card.board_id, title: card.title })}
+                className="flex w-full items-center gap-2.5 rounded-lg bg-surface-2 px-2.5 py-2 text-sm font-medium transition-all duration-150 hover:bg-surface-3 active:scale-[0.98]"
+            >
+                <Timer className="size-4" />
+                Focar neste card
+            </button>
+        );
+    }
+
+    return (
+        <button
+            type="button"
+            onClick={pomodoro.running ? pausePomodoro : startPomodoro}
+            aria-label={pomodoro.running ? 'Pausar o foco neste card' : 'Retomar o foco neste card'}
+            className="flex w-full items-center gap-2.5 rounded-lg bg-primary-soft px-2.5 py-2 text-sm font-semibold text-primary ring-1 ring-primary/25 transition-all duration-150 hover:brightness-105 active:scale-[0.98]"
+        >
+            {pomodoro.running ? <Pause className="size-4 fill-current" /> : <Play className="size-4 fill-current" />}
+            <span className="flex-1 text-left">{pomodoro.running ? 'Focando' : 'Retomar'}</span>
+            <span className="tabular-nums">{clock(pomodoro.left)}</span>
+        </button>
     );
 }
 

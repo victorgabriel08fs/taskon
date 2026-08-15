@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import type { ReactNode } from 'react';
 import { Avatar } from '@/components/ui/avatar';
 import { Logo } from '@/components/logo';
+import { PomodoroWidget } from '@/components/pomodoro-widget';
 import { Popover, PopoverItem } from '@/components/ui/popover';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { cn } from '@/lib/utils';
@@ -41,7 +42,7 @@ export default function AppLayout({ children, overlay = false, headerSlot, class
                     href="/dashboard"
                     className="shrink-0 rounded-lg transition-transform duration-200 hover:scale-[1.03] active:scale-95"
                 >
-                    <Logo invert={overlay} className={cn(overlay && 'drop-shadow')} />
+                    <Logo compact invert={overlay} className={cn(overlay && 'drop-shadow')} />
                 </Link>
 
                 {/* No quadro o cabeçalho já é do quadro: o título e as ações
@@ -51,6 +52,11 @@ export default function AppLayout({ children, overlay = false, headerSlot, class
                 <div className="min-w-0 flex-1">{headerSlot}</div>
 
                 <div className="flex shrink-0 items-center gap-2">
+                    {/* O cronômetro mora aqui para acompanhar o usuário por todo o
+                        app — inclusive de um quadro para outro, já que cada página
+                        do Inertia remonta este layout. */}
+                    {user && <PomodoroWidget userId={user.id} overlay={overlay} />}
+
                     <ThemeToggle className={cn(overlay && 'bg-white/12 ring-white/20')} />
 
                     {user && (
