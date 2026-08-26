@@ -14,20 +14,31 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, arrayMove, horizontalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { Head, router, usePage } from '@inertiajs/react';
-import { Plus, X } from 'lucide-react';
+import { CheckCheck, ClipboardList, Plus, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityPanel } from '@/components/board/activity-panel';
 import { BoardHeader } from '@/components/board/board-header';
 import { CardItem } from '@/components/board/card-item';
 import { CardModal } from '@/components/board/card-modal';
+import { ExportModal } from '@/components/board/export-modal';
 import { ListColumn } from '@/components/board/list-column';
 import { EMPTY_FILTERS, matchesFilters, type BoardFilters } from '@/components/board/filters';
 import { Button } from '@/components/ui/button';
 import { useConfirm } from '@/components/ui/confirm';
 import AppLayout from '@/layouts/app-layout';
 import { boardBackgroundClass } from '@/lib/palette';
-import { cn } from '@/lib/utils';
-import type { Activity, Board, BoardBackground, BoardList, Card, CardDetail, ColorKey } from '@/types';
+import { cn, pluralize } from '@/lib/utils';
+import type {
+    Activity,
+    Board,
+    BoardBackground,
+    BoardList,
+    Card,
+    CardDetail,
+    CardExportDetail,
+    ColorKey,
+} from '@/types';
 
 interface BoardShowProps {
     board: Board;
@@ -35,6 +46,8 @@ interface BoardShowProps {
     backgrounds: BoardBackground[];
     colors: ColorKey[];
     activity?: Activity[];
+    /** Prop `optional`: chega só quando a exportação a pede. */
+    exportDetails?: CardExportDetail[];
 }
 
 /** Assinatura da ordenação — usada para não disparar request quando nada mudou. */
@@ -46,7 +59,14 @@ function listIdOfCard(lists: BoardList[], cardId: number): number | null {
     return lists.find((list) => list.cards.some((card) => card.id === cardId))?.id ?? null;
 }
 
-export default function BoardShow({ board, activeCard, backgrounds, colors, activity }: BoardShowProps) {
+export default function BoardShow({
+    board,
+    activeCard,
+    backgrounds,
+    colors,
+    activity,
+    exportDetails,
+}: BoardShowProps) {
     const user = usePage().props.auth.user!;
 
     // Espelho local das listas: é ele que se move durante o arraste. O servidor
@@ -55,6 +75,9 @@ export default function BoardShow({ board, activeCard, backgrounds, colors, acti
     const [dragged, setDragged] = useState<{ type: 'card'; card: Card } | { type: 'list'; list: BoardList } | null>(null);
     const [filters, setFilters] = useState<BoardFilters>(EMPTY_FILTERS);
     const [showActivity, setShowActivity] = useState(false);
+    const [selectMode, setSelectMode] = useState(false);
+    const [selected, setSelected] = useState<Set<number>>(new Set());
+    const [exportOpen, setExportOpen] = useState(false);
 
     const isDragging = useRef(false);
     const snapshot = useRef('');
@@ -232,6 +255,58 @@ export default function BoardShow({ board, activeCard, backgrounds, colors, acti
         return map;
     }, [lists, filters, user.id]);
 
+    /* ------------------------------------------------------------ exportação */
+
+    const onScreen = useMemo(() => [...visibleCards.values()].flat(), [visibleCards]);
+    const allPicked = onScreen.length > 0 && onScreen.every((card) => selected.has(card.id));
+
+    const toggleCard = useCallback((card: Card) => {
+        setSelected((current) => {
+            const next = new Set(current);
+
+            // `delete` devolve false quando o card ainda não estava marcado.
+            if (!next.delete(card.id)) next.add(card.id);
+
+            return next;
+        });
+    }, []);
+
+    const toggleMany = useCallback((cards: Card[]) => {
+        setSelected((current) => {
+            const next = new Set(current);
+            const filled = cards.length > 0 && cards.every((card) => next.has(card.id));
+
+            cards.forEach((card) => (filled ? next.delete(card.id) : next.add(card.id)));
+
+            return next;
+        });
+    }, []);
+
+    const openExport = () => {
+        setExportOpen(true);
+
+        // `exportDetails` é uma prop `optional`: ela só existe depois deste
+        // pedido e, uma vez recebida, fica nas props — daí pedir uma vez só.
+        if (!exportDetails) router.reload({ only: ['exportDetails'] });
+    };
+
+    // Esc sai do modo seleção, mas não enquanto o modal está aberto: lá o Esc
+    // é do modal, e sair dos dois de uma vez perderia a seleção sem querer.
+    useEffect(() => {
+        if (!selectMode || exportOpen) return;
+
+        const onKey = (event: KeyboardEvent) => {
+            if (event.key !== 'Escape') return;
+
+            setSelectMode(false);
+            setSelected(new Set());
+        };
+
+        document.addEventListener('keydown', onKey);
+
+        return () => document.removeEventListener('keydown', onKey);
+    }, [selectMode, exportOpen]);
+
     return (
         <AppLayout
             overlay
@@ -243,6 +318,7 @@ export default function BoardShow({ board, activeCard, backgrounds, colors, acti
                     filters={filters}
                     onFiltersChange={setFilters}
                     onToggleActivity={() => setShowActivity((value) => !value)}
+                    onStartExport={() => setSelectMode(true)}
                     onDeleteBoard={() =>
                         confirm({
                             title: 'Excluir este quadro?',
@@ -281,6 +357,10 @@ export default function BoardShow({ board, activeCard, backgrounds, colors, acti
                                 cards={visibleCards.get(list.id) ?? []}
                                 onOpenCard={openCard}
                                 filtered={(visibleCards.get(list.id)?.length ?? 0) !== list.cards.length}
+                                selectMode={selectMode}
+                                selected={selected}
+                                onToggleCard={toggleCard}
+                                onToggleList={toggleMany}
                                 onDelete={(target) =>
                                     confirm({
                                         title: `Excluir "${target.title}"?`,
@@ -317,7 +397,29 @@ export default function BoardShow({ board, activeCard, backgrounds, colors, acti
                 </DragOverlay>
             </DndContext>
 
+            <SelectionBar
+                open={selectMode}
+                count={selected.size}
+                allPicked={allPicked}
+                onToggleAll={() => toggleMany(onScreen)}
+                onClear={() => setSelected(new Set())}
+                onExport={openExport}
+                onExit={() => {
+                    setSelectMode(false);
+                    setSelected(new Set());
+                }}
+            />
+
             <CardModal card={activeCard} board={board} colors={colors} onClose={closeCard} />
+
+            <ExportModal
+                open={exportOpen}
+                board={board}
+                selected={selected}
+                details={exportDetails}
+                onToggleCard={(id) => setSelected((current) => new Set([...current].filter((item) => item !== id)))}
+                onClose={() => setExportOpen(false)}
+            />
 
             <ActivityPanel open={showActivity} onClose={() => setShowActivity(false)} activity={activity} />
 
@@ -379,6 +481,77 @@ function BoardCanvas({ children }: { children: React.ReactNode }) {
                 {children}
             </div>
         </div>
+    );
+}
+
+/**
+ * Barra do modo seleção. Flutua sobre o quadro em vez de empurrar as colunas:
+ * entrar e sair do modo não pode remexer no layout que a pessoa está lendo.
+ */
+function SelectionBar({
+    open,
+    count,
+    allPicked,
+    onToggleAll,
+    onClear,
+    onExport,
+    onExit,
+}: {
+    open: boolean;
+    count: number;
+    allPicked: boolean;
+    onToggleAll: () => void;
+    onClear: () => void;
+    onExport: () => void;
+    onExit: () => void;
+}) {
+    return (
+        <AnimatePresence>
+            {open && (
+                <motion.div
+                    initial={{ opacity: 0, y: 24 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 16 }}
+                    transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                    className="pointer-events-none absolute inset-x-0 bottom-5 z-20 flex justify-center px-4"
+                >
+                    <div className="pointer-events-auto flex flex-wrap items-center justify-center gap-1.5 rounded-xl bg-surface/95 p-2 pl-3.5 shadow-[var(--shadow-float)] ring-1 ring-border backdrop-blur">
+                        <p className="text-sm font-semibold tabular-nums">
+                            {count === 0
+                                ? 'Escolha os cards do prompt'
+                                : pluralize(count, 'card escolhido', 'cards escolhidos')}
+                        </p>
+
+                        <span className="mx-1 hidden h-5 w-px bg-border sm:block" />
+
+                        <Button size="sm" variant="ghost" onClick={onToggleAll}>
+                            <CheckCheck className="size-4" />
+                            {allPicked ? 'Desmarcar visíveis' : 'Marcar visíveis'}
+                        </Button>
+
+                        {count > 0 && (
+                            <Button size="sm" variant="ghost" onClick={onClear}>
+                                Limpar
+                            </Button>
+                        )}
+
+                        <Button size="sm" onClick={onExport} disabled={count === 0}>
+                            <ClipboardList className="size-4" />
+                            Gerar prompt
+                        </Button>
+
+                        <button
+                            type="button"
+                            onClick={onExit}
+                            aria-label="Sair do modo de seleção"
+                            className="rounded-md p-1.5 text-muted-fg transition-colors hover:bg-surface-2 hover:text-foreground"
+                        >
+                            <X className="size-4" />
+                        </button>
+                    </div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     );
 }
 

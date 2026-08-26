@@ -112,6 +112,38 @@ export interface CardDetail {
     activities: Activity[];
 }
 
+/* -------------------------------------------------------------------------- */
+/* Exportação                                                                  */
+/* -------------------------------------------------------------------------- */
+
+export interface ExportChecklistItem {
+    content: string;
+    is_done: boolean;
+}
+
+export interface ExportChecklist {
+    title: string;
+    items: ExportChecklistItem[];
+}
+
+export interface ExportComment {
+    /** Nulo quando a conta do autor não existe mais. */
+    author: string | null;
+    body: string;
+    created_at: string | null;
+}
+
+/**
+ * O que o texto exportado precisa e o `Card` do Kanban não carrega. Vem por
+ * `CardExportResource`, sob demanda, e é casado com o card pelo `id`.
+ */
+export interface CardExportDetail {
+    id: number;
+    description: string | null;
+    checklists: ExportChecklist[];
+    comments: ExportComment[];
+}
+
 export interface BoardList {
     id: number;
     title: string;

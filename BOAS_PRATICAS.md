@@ -905,7 +905,87 @@ quando o card chegou lá. Daqui para a frente quem manda é a flag, não o nome.
 
 ---
 
-## 13. O que ficou de fora (e como fazer)
+## 13. Exportar tasks como prompt
+
+O quadro vira texto separado em sprints, para colar num LLM. Tudo acontece no
+cliente: [`lib/task-export.ts`](resources/js/lib/task-export.ts) monta as
+sprints e escreve a string, [`components/board/export-modal.tsx`](resources/js/components/board/export-modal.tsx)
+só cuida do estado e dos botões.
+
+### 13.1 A prop pesada é `optional`, não `defer`
+
+O texto precisa de descrição, checklist e comentário de **todos** os cards
+selecionados — dados que o Kanban nunca carrega. Uma prop adiada resolveria o
+carregamento, mas rodaria a consulta em **toda** visita ao quadro:
+
+```php
+// BoardController::show
+'exportDetails' => Inertia::optional(fn () => CardExportResource::collection(...)),
+```
+
+`Inertia::optional` só é avaliada quando alguém pede por nome:
+
+```tsx
+if (!exportDetails) router.reload({ only: ['exportDetails'] });
+```
+
+Uma vez recebida, a prop fica nas props do Inertia — recarregar `board` depois
+disso não a apaga, então o pedido é único por visita.
+
+**Não se cria rota `/api/export`** (regra da seção 1) nem se devolve JSON de um
+controller web (seção 2.1). A exportação é uma prop da mesma tela.
+
+### 13.2 O detalhe complementa o card, não o repete
+
+[`CardExportResource`](app/Http/Resources/CardExportResource.php) devolve só
+`id`, `description`, `checklists` e `comments`. Título, prazo, etiquetas e
+responsáveis já vieram dentro de `board`, e o cliente casa os dois pelo `id`.
+Repetir tudo dobraria um payload que já carrega o quadro inteiro — por isso o
+`->get(['id', 'description'])` na consulta e o teste que trava a lista de
+chaves em [`CardExportTest`](tests/Feature/CardExportTest.php).
+
+### 13.3 Modo seleção desliga o arraste
+
+Enquanto a pessoa marca dez cards seguidos, um card que se move é acidente e
+não gesto. `CardItem` recebe `selectMode` e passa `disabled` ao `useSortable`;
+o clique vira marcação e o card ganha `role="checkbox"` com `aria-checked` —
+sem os `attributes` do dnd-kit, o `tabIndex` e o Enter/Espaço passam a ser
+responsabilidade nossa.
+
+O `Esc` sai do modo, **exceto** com o modal aberto: lá o `Esc` é do modal, e
+fechar os dois de uma vez jogaria a seleção fora sem querer.
+
+### 13.4 Sprint é um agrupamento, não uma entidade
+
+Não existe tabela `sprints`. Os quatro modos são funções puras sobre a lista de
+cards selecionados:
+
+| Modo | Regra |
+| --- | --- |
+| Por lista | uma sprint por coluna, com o nome da coluna |
+| Por prazo | janelas de N semanas **ancoradas na primeira tarefa de cada janela** |
+| Tamanho fixo | blocos de N tarefas, na ordem do quadro |
+| Manual | nomes e alocação editáveis, semeados pelo modo anterior |
+
+A âncora móvel do modo "por prazo" evita o que uma grade fixa faria: doze
+sprints vazias entre uma tarefa de agosto e outra de novembro.
+
+Entrar no modo manual **semeia** os nomes e a alocação a partir das sprints que
+estavam na tela. Começar do zero jogaria fora o agrupamento que a pessoa acabou
+de escolher.
+
+### 13.5 Data com ano, etiqueta sem nome fora
+
+O texto é lido fora do app, meses depois. Por isso ele tem o próprio
+formatador, com ano — e não o `formatDate()` de `lib/utils`, que corta o ano
+porque ali o contexto é o quadro aberto agora.
+
+Pela mesma lógica, etiqueta sem nome não entra: a cor diz algo no card, nada
+num prompt.
+
+---
+
+## 14. O que ficou de fora (e como fazer)
 
 | Item | Caminho |
 | --- | --- |

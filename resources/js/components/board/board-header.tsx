@@ -1,5 +1,5 @@
 import { router, useForm } from '@inertiajs/react';
-import { History, Image, MoreHorizontal, Star, Trash2, UserPlus, X } from 'lucide-react';
+import { ClipboardList, History, Image, MoreHorizontal, Star, Trash2, UserPlus, X } from 'lucide-react';
 import { useState } from 'react';
 import { FilterPopover, type BoardFilters } from '@/components/board/filters';
 import { Avatar } from '@/components/ui/avatar';
@@ -16,6 +16,7 @@ interface BoardHeaderProps {
     filters: BoardFilters;
     onFiltersChange: (filters: BoardFilters) => void;
     onToggleActivity: () => void;
+    onStartExport: () => void;
     onDeleteBoard: () => void;
 }
 
@@ -29,6 +30,7 @@ export function BoardHeader({
     filters,
     onFiltersChange,
     onToggleActivity,
+    onStartExport,
     onDeleteBoard,
 }: BoardHeaderProps) {
     const [editing, setEditing] = useState(false);
@@ -105,6 +107,11 @@ export function BoardHeader({
             <div className="ml-auto flex items-center gap-2">
                 <FilterPopover board={board} filters={filters} onChange={onFiltersChange} />
 
+                <button type="button" onClick={onStartExport} className={cn(ghost, 'hidden lg:inline-flex')}>
+                    <ClipboardList className="size-4" />
+                    Exportar
+                </button>
+
                 <button type="button" onClick={onToggleActivity} className={cn(ghost, 'hidden md:inline-flex')}>
                     <History className="size-4" />
                     Atividade
@@ -123,6 +130,16 @@ export function BoardHeader({
                 >
                     {({ close }) => (
                         <>
+                            <PopoverItem
+                                icon={<ClipboardList className="size-4" />}
+                                onClick={() => {
+                                    close();
+                                    onStartExport();
+                                }}
+                            >
+                                Exportar como prompt
+                            </PopoverItem>
+
                             <PopoverItem
                                 icon={<History className="size-4" />}
                                 onClick={() => {

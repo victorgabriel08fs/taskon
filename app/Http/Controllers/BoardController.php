@@ -6,6 +6,7 @@ use App\Http\Resources\ActivityResource;
 use App\Http\Resources\BoardResource;
 use App\Http\Resources\BoardSummaryResource;
 use App\Http\Resources\CardDetailResource;
+use App\Http\Resources\CardExportResource;
 use App\Models\Board;
 use App\Models\Card;
 use App\Support\ActivityLogger;
@@ -131,6 +132,22 @@ class BoardController extends Controller
             'colors' => config('taskon.colors'),
             'activity' => Inertia::defer(fn () => ActivityResource::collection(
                 $board->activities()->with('user')->limit(config('taskon.limits.activities_per_board'))->get()
+            )),
+
+            // `optional` e não `defer`: descrição, checklist e comentário de
+            // TODOS os cards só são lidos quando alguém abre a exportação.
+            // Adiada, a consulta rodaria em toda visita ao quadro.
+            'exportDetails' => Inertia::optional(fn () => CardExportResource::collection(
+                $board->cards()
+                    ->whereNull('cards.archived_at')
+                    ->with([
+                        'checklists.items',
+                        // A relação já vem `latest()`; no texto exportado a
+                        // conversa faz sentido do começo para o fim.
+                        'comments' => fn ($q) => $q->reorder('created_at')->with('author'),
+                    ])
+                    // Só as colunas que faltam: o resto do card já está em `board`.
+                    ->get(['id', 'description'])
             )),
         ]);
     }

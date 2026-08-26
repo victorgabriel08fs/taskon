@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { AlignLeft, CalendarClock, CheckSquare, MessageSquare } from 'lucide-react';
+import { AlignLeft, CalendarClock, Check, CheckSquare, MessageSquare } from 'lucide-react';
 import { useRef } from 'react';
 import { Avatar } from '@/components/ui/avatar';
 import { COLOR_CHIP, COLOR_SOLID } from '@/lib/palette';
@@ -20,13 +20,29 @@ interface CardItemProps {
     onOpen: (card: Card) => void;
     /** Renderização dentro do DragOverlay: sem sortable, com inclinação. */
     overlay?: boolean;
+    /** Modo exportação: o clique marca o card em vez de abri-lo. */
+    selectMode?: boolean;
+    selected?: boolean;
+    onToggleSelect?: (card: Card) => void;
 }
 
-export function CardItem({ card, board, onOpen, overlay = false }: CardItemProps) {
+export function CardItem({
+    card,
+    board,
+    onOpen,
+    overlay = false,
+    selectMode = false,
+    selected = false,
+    onToggleSelect,
+}: CardItemProps) {
+    // No modo seleção o arraste sai de cena: um card que se move enquanto a
+    // pessoa marca dez seguidos é acidente, não gesto.
+    const inert = overlay || selectMode;
+
     const sortable = useSortable({
         id: `card:${card.id}`,
         data: { type: 'card', cardId: card.id, listId: card.board_list_id },
-        disabled: overlay,
+        disabled: inert,
     });
 
     // Diferencia clique de arraste: se o ponteiro andou, não abre o modal.
@@ -48,19 +64,31 @@ export function CardItem({ card, board, onOpen, overlay = false }: CardItemProps
                           transition: sortable.transition,
                       }
             }
-            {...(overlay ? {} : sortable.attributes)}
-            {...(overlay ? {} : sortable.listeners)}
+            {...(inert ? {} : sortable.attributes)}
+            {...(inert ? {} : sortable.listeners)}
+            role={selectMode ? 'checkbox' : undefined}
+            aria-checked={selectMode ? selected : undefined}
+            tabIndex={selectMode ? 0 : undefined}
             onPointerDown={(event) => {
                 origin.current = { x: event.clientX, y: event.clientY };
                 // O spread acima já define onPointerDown; encadeamos em vez de sobrescrever.
                 sortable.listeners?.onPointerDown?.(event);
+            }}
+            onKeyDown={(event) => {
+                if (!selectMode || (event.key !== 'Enter' && event.key !== ' ')) return;
+
+                event.preventDefault();
+                onToggleSelect?.(card);
             }}
             onClick={(event) => {
                 const start = origin.current;
                 const moved =
                     start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > 6;
 
-                if (!moved) onOpen(card);
+                if (moved) return;
+
+                if (selectMode) onToggleSelect?.(card);
+                else onOpen(card);
             }}
             className={cn(
                 // touch-manipulation (e não touch-none): no celular o dedo continua
@@ -73,11 +101,24 @@ export function CardItem({ card, board, onOpen, overlay = false }: CardItemProps
                 overlay && 'rotate-3 scale-[1.03] cursor-grabbing shadow-[var(--shadow-float)] ring-primary/50',
                 !overlay && sortable.isDragging && 'opacity-30',
                 card.completed_at && 'opacity-75',
+                selected && 'opacity-100 ring-2 ring-primary',
             )}
         >
             {card.cover_color && <div className={cn('h-2 w-full', COLOR_SOLID[card.cover_color])} />}
 
-            <div className="space-y-2 p-2.5">
+            {selectMode && (
+                <span
+                    aria-hidden
+                    className={cn(
+                        'absolute right-2 top-2 z-10 grid size-4.5 place-items-center rounded border transition-colors duration-150',
+                        selected ? 'border-primary bg-primary text-primary-fg' : 'border-border bg-surface/90',
+                    )}
+                >
+                    {selected && <Check className="size-3" strokeWidth={3} />}
+                </span>
+            )}
+
+            <div className={cn('space-y-2 p-2.5', selectMode && 'pr-8')}>
                 {labels.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                         {labels.map((label) => (

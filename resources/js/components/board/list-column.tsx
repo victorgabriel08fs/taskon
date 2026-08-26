@@ -2,7 +2,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { router } from '@inertiajs/react';
-import { CircleCheckBig, GripVertical, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Check, CircleCheckBig, GripVertical, Minus, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { AddCard } from '@/components/board/add-card';
 import { CardItem } from '@/components/board/card-item';
@@ -19,9 +19,25 @@ interface ListColumnProps {
     onDelete: (list: BoardList) => void;
     /** true quando o filtro escondeu cards desta lista. */
     filtered: boolean;
+    /** Modo exportação: ver `CardItem`. */
+    selectMode: boolean;
+    selected: Set<number>;
+    onToggleCard: (card: Card) => void;
+    onToggleList: (cards: Card[]) => void;
 }
 
-export function ListColumn({ list, board, cards, onOpenCard, onDelete, filtered }: ListColumnProps) {
+export function ListColumn({
+    list,
+    board,
+    cards,
+    onOpenCard,
+    onDelete,
+    filtered,
+    selectMode,
+    selected,
+    onToggleCard,
+    onToggleList,
+}: ListColumnProps) {
     const sortable = useSortable({ id: `list:${list.id}`, data: { type: 'list', listId: list.id } });
 
     // Área de soltura que cobre a coluna inteira — é o que permite largar um
@@ -33,6 +49,7 @@ export function ListColumn({ list, board, cards, onOpenCard, onDelete, filtered 
     const input = useRef<HTMLInputElement>(null);
 
     const overLimit = list.card_limit !== null && cards.length > list.card_limit;
+    const picked = cards.filter((card) => selected.has(card.id)).length;
 
     const saveTitle = () => {
         const value = title.trim();
@@ -65,15 +82,41 @@ export function ListColumn({ list, board, cards, onOpenCard, onDelete, filtered 
         >
             {/* ------------------------------------------------------ cabeçalho */}
             <header className="flex items-center gap-1 px-2 pt-2">
-                <button
-                    ref={sortable.setActivatorNodeRef}
-                    {...sortable.attributes}
-                    {...sortable.listeners}
-                    aria-label={`Mover lista ${list.title}`}
-                    className="cursor-grab touch-none rounded p-1 text-muted-fg opacity-0 transition-opacity duration-150 hover:bg-surface-3 focus-visible:opacity-100 active:cursor-grabbing group-hover/col:opacity-70"
-                >
-                    <GripVertical className="size-4" />
-                </button>
+                {selectMode ? (
+                    <button
+                        type="button"
+                        role="checkbox"
+                        aria-checked={picked === 0 ? false : picked === cards.length ? true : 'mixed'}
+                        onClick={() => onToggleList(cards)}
+                        aria-label={`Selecionar os cards de ${list.title}`}
+                        disabled={cards.length === 0}
+                        className="rounded p-1 text-muted-fg transition-colors hover:bg-surface-3 disabled:opacity-40"
+                    >
+                        <span
+                            className={cn(
+                                'grid size-4 place-items-center rounded border transition-colors duration-150',
+                                picked > 0 ? 'border-primary bg-primary text-primary-fg' : 'border-border bg-surface',
+                            )}
+                        >
+                            {picked > 0 &&
+                                (picked === cards.length ? (
+                                    <Check className="size-3" strokeWidth={3} />
+                                ) : (
+                                    <Minus className="size-3" strokeWidth={3} />
+                                ))}
+                        </span>
+                    </button>
+                ) : (
+                    <button
+                        ref={sortable.setActivatorNodeRef}
+                        {...sortable.attributes}
+                        {...sortable.listeners}
+                        aria-label={`Mover lista ${list.title}`}
+                        className="cursor-grab touch-none rounded p-1 text-muted-fg opacity-0 transition-opacity duration-150 hover:bg-surface-3 focus-visible:opacity-100 active:cursor-grabbing group-hover/col:opacity-70"
+                    >
+                        <GripVertical className="size-4" />
+                    </button>
+                )}
 
                 {editing ? (
                     <input
@@ -161,7 +204,15 @@ export function ListColumn({ list, board, cards, onOpenCard, onDelete, filtered 
             >
                 <SortableContext items={cards.map((card) => `card:${card.id}`)} strategy={verticalListSortingStrategy}>
                     {cards.map((card) => (
-                        <CardItem key={card.id} card={card} board={board} onOpen={onOpenCard} />
+                        <CardItem
+                            key={card.id}
+                            card={card}
+                            board={board}
+                            onOpen={onOpenCard}
+                            selectMode={selectMode}
+                            selected={selected.has(card.id)}
+                            onToggleSelect={onToggleCard}
+                        />
                     ))}
                 </SortableContext>
 

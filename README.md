@@ -25,6 +25,9 @@
   comentários e histórico.
 - **Filtros** por texto, etiqueta, responsável, "só os meus" e "esconder
   concluídos".
+- **Exportar como prompt**: entra no modo seleção, você marca os cards e sai um
+  texto separado em sprints — por lista, por prazo, em blocos de N ou montado na
+  mão — em Markdown, texto puro ou JSON, pronto para colar num LLM.
 - **Feed de atividades** do quadro, carregado depois da primeira pintura.
 - **Resumo diário por e-mail** com o que venceu, o que vence hoje e o que vem
   nos próximos dias — entregue pelo Resend, com opt-out em
