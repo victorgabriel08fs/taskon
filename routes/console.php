@@ -26,3 +26,24 @@ Schedule::command('taskon:daily-digest')
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/daily-digest.log'));
+
+/*
+|--------------------------------------------------------------------------
+| Arquivamento dos concluídos
+|--------------------------------------------------------------------------
+|
+| Uma varredura por noite tira das colunas os cards concluídos há mais tempo
+| que o prazo de cada quadro. Quadro sem prazo definido não é tocado — e esse
+| é o padrão de todos eles.
+|
+| De madrugada de propósito (config/taskon.php › auto_archive.at): o card sai
+| do quadro entre um expediente e outro, não debaixo do cursor de quem está
+| olhando para ele. Dá para rodar na mão com `php artisan
+| taskon:archive-done-cards --dry-run` para ver o que sairia.
+|
+*/
+Schedule::command('taskon:archive-done-cards')
+    ->dailyAt(config('taskon.auto_archive.at'))
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/archive-done-cards.log'));

@@ -58,6 +58,38 @@ return [
     'limits' => [
         'activities_per_board' => 60,
         'activities_per_card' => 20,
+
+        // Teto da tela de arquivados. Ela é uma gaveta de resgate, não um
+        // relatório: quem precisa de tudo exporta o quadro.
+        'archived_per_board' => 100,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Arquivamento automático dos concluídos
+    |--------------------------------------------------------------------------
+    |
+    | Cada quadro escolhe em quantos dias um card concluído sai da coluna
+    | (boards.auto_archive_done_after_days). Sem prazo definido, nada é
+    | arquivado — o padrão de todo quadro é ficar desligado.
+    |
+    | Quem executa é `php artisan taskon:archive-done-cards`, agendado em
+    | routes/console.php e disparado pelo serviço 'taskon-scheduler'. Arquivar
+    | não apaga: o card continua no banco com archived_at, sai das colunas e
+    | volta pela tela de arquivados.
+    |
+    */
+
+    'auto_archive' => [
+
+        // Horário da varredura, no fuso do app. De madrugada de propósito: o
+        // card some entre um expediente e outro, não debaixo do cursor de quem
+        // está trabalhando nele.
+        'at' => env('AUTO_ARCHIVE_AT', '03:00'),
+
+        // Prazos oferecidos na tela — e a lista canônica que o backend valida.
+        // Ausência de prazo (null) é sempre aceita e significa "desligado".
+        'options' => [1, 3, 7, 14, 30],
     ],
 
     /*

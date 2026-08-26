@@ -25,6 +25,10 @@
   comentários e histórico. Quem cria o card já entra como responsável dele.
 - **Filtros** por texto, etiqueta, responsável, "só os meus" e "esconder
   concluídos".
+- **Arquivamento automático dos concluídos**: cada quadro escolhe o prazo (1, 3,
+  7, 14 ou 30 dias) e a coluna "Concluído" se esvazia sozinha de madrugada.
+  Arquivar não apaga — os cards ficam na gaveta **Arquivados**, continuam
+  contando no progresso do quadro e voltam com um clique.
 - **Exportar como prompt**: entra no modo seleção, você marca os cards e sai um
   texto separado em sprints — por lista, por prazo, em blocos de N ou montado na
   mão — em Markdown, texto puro ou JSON, pronto para colar num LLM.
@@ -98,7 +102,7 @@ abra **https://tasks.localhost**.
 | --- | --- |
 | `taskon-init` | Roda uma vez: composer, migrations, seed. Idempotente. |
 | `taskon-app` | PHP-FPM 8.3. Só ele fala com o banco. |
-| `taskon-scheduler` | `schedule:work`. É quem dispara o resumo diário — sem ele nada sai sozinho. |
+| `taskon-scheduler` | `schedule:work`. É quem dispara o resumo diário e o arquivamento dos concluídos — sem ele nada acontece sozinho. |
 | `taskon-nginx` | Serve `public/` e repassa PHP ao `taskon-app`. É quem tem as labels do Traefik. |
 
 O código é **bind mount** do Windows: editar um `.php` reflete na hora (o
@@ -226,11 +230,44 @@ devolve 403 — o comando marca a linha com `✗` e o motivo aparece em
 
 ---
 
+## Arquivamento automático dos concluídos
+
+A coluna "Concluído" é a que mais cresce e a que menos se lê: em algumas semanas
+ela tem mais cards que todas as outras somadas, e o que falta fica espremido. No
+menu **⋯ › Arquivados** de cada quadro você escolhe em quantos dias um card
+concluído sai da coluna — **nunca** (o padrão), 1, 3, 7, 14 ou 30 dias.
+
+Todo dia às **03:00** a varredura tira das colunas os concluídos que passaram do
+prazo. Arquivar **não apaga**: o card sai do Kanban, continua no banco com
+`archived_at`, e a mesma tela lista tudo o que está na gaveta com um botão de
+**Restaurar**. Também dá para arquivar um card na mão, pelo próprio card.
+
+Dois cuidados que valem saber:
+
+- **O progresso não afunda.** Um concluído arquivado continua contando no total e
+  nos concluídos do quadro, no gráfico de ritmo e em "concluídas na semana" —
+  senão ligar o recurso faria a barra do quadro cair de 100% para 0% justamente
+  por o trabalho ter terminado. Quem some da conta é o card arquivado **sem**
+  concluir, que foi abandonado de propósito.
+- **Restaurar reabre.** O card volta para a primeira coluna que não é de
+  conclusão, e sem `completed_at`. Se voltasse ainda concluído, a varredura o
+  levaria de novo na madrugada seguinte.
+
+```bash
+php artisan taskon:archive-done-cards --dry-run       # o que sairia, sem arquivar
+php artisan taskon:archive-done-cards --board=1       # só um quadro
+php artisan taskon:archive-done-cards                 # o que o agendador roda
+```
+
+O horário e os prazos oferecidos ficam em `config/taskon.php › auto_archive`.
+
+---
+
 ## Como o projeto está organizado
 
 ```
 app/
-├── Console/Commands/     # taskon:daily-digest
+├── Console/Commands/     # taskon:daily-digest, taskon:archive-done-cards
 ├── Http/Controllers/     # orquestração: autoriza → valida → persiste → redireciona
 ├── Http/Resources/       # contrato de saída, espelha resources/js/types
 ├── Mail/                 # DailyDigest (view em resources/views/mail/)

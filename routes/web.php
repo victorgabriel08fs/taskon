@@ -29,6 +29,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/boards/{board}', [BoardController::class, 'destroy'])->name('boards.destroy');
     Route::post('/boards/{board}/favorite', [BoardController::class, 'toggleFavorite'])->name('boards.favorite');
 
+    // Roda agora a mesma varredura que o agendador roda de madrugada.
+    Route::post('/boards/{board}/archive-done', [BoardController::class, 'archiveDone'])->name('boards.archive-done');
+
     // Deep link do card: renderiza o mesmo quadro com o modal aberto.
     Route::get('/boards/{board}/cards/{card}', [BoardController::class, 'show'])->name('cards.show');
 
@@ -51,6 +54,8 @@ Route::middleware('auth')->group(function () {
     Route::patch('/cards/{card}', [CardController::class, 'update'])->name('cards.update');
     Route::delete('/cards/{card}', [CardController::class, 'destroy'])->name('cards.destroy');
     Route::patch('/cards/{card}/move', [CardController::class, 'move'])->name('cards.move');
+    Route::post('/cards/{card}/archive', [CardController::class, 'archive'])->name('cards.archive');
+    Route::post('/cards/{card}/restore', [CardController::class, 'restore'])->name('cards.restore');
     Route::post('/cards/{card}/labels/{labelId}', [CardController::class, 'toggleLabel'])->name('cards.labels.toggle');
     Route::post('/cards/{card}/members/{userId}', [CardController::class, 'toggleMember'])->name('cards.members.toggle');
 

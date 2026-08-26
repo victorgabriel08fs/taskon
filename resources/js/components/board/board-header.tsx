@@ -1,5 +1,5 @@
 import { router, useForm } from '@inertiajs/react';
-import { ClipboardList, History, Image, MoreHorizontal, Star, Trash2, UserPlus, X } from 'lucide-react';
+import { Archive, ClipboardList, History, Image, MoreHorizontal, Star, Trash2, UserPlus, X } from 'lucide-react';
 import { useState } from 'react';
 import { FilterPopover, type BoardFilters } from '@/components/board/filters';
 import { Avatar } from '@/components/ui/avatar';
@@ -17,6 +17,7 @@ interface BoardHeaderProps {
     onFiltersChange: (filters: BoardFilters) => void;
     onToggleActivity: () => void;
     onStartExport: () => void;
+    onOpenArchived: () => void;
     onDeleteBoard: () => void;
 }
 
@@ -31,6 +32,7 @@ export function BoardHeader({
     onFiltersChange,
     onToggleActivity,
     onStartExport,
+    onOpenArchived,
     onDeleteBoard,
 }: BoardHeaderProps) {
     const [editing, setEditing] = useState(false);
@@ -148,6 +150,24 @@ export function BoardHeader({
                                 }}
                             >
                                 Ver atividade
+                            </PopoverItem>
+
+                            {/* Aparece sempre, mesmo com a gaveta vazia: é por
+                                aqui que se liga o arquivamento automático, e
+                                esconder a entrada esconderia o recurso inteiro. */}
+                            <PopoverItem
+                                icon={<Archive className="size-4" />}
+                                onClick={() => {
+                                    close();
+                                    onOpenArchived();
+                                }}
+                            >
+                                <span className="flex-1">Arquivados</span>
+                                {board.archived_count > 0 && (
+                                    <span className="rounded-full bg-surface-2 px-1.5 text-[10px] font-bold tabular-nums text-muted-fg">
+                                        {board.archived_count}
+                                    </span>
+                                )}
                             </PopoverItem>
 
                             {board.can.delete && (

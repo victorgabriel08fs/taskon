@@ -114,10 +114,15 @@ class DashboardController extends Controller
         ];
     }
 
+    /**
+     * `history: true` — o card concluído na segunda e arquivado na quarta não
+     * pode desaparecer do "concluídas na semana" na quinta. Aqui se conta o que
+     * foi feito, e o que foi feito não se desfaz por ter saído da tela.
+     */
     private function completedBetween(User $user, CarbonImmutable $from, CarbonImmutable $to): int
     {
         return Card::query()
-            ->assignedTo($user)
+            ->assignedTo($user, history: true)
             ->whereBetween('cards.completed_at', [$from, $to])
             ->count();
     }
@@ -136,9 +141,13 @@ class DashboardController extends Controller
     {
         $since = $now->subDays(self::TREND_DAYS - 1)->startOfDay();
 
+        // `counted()` e não `whereNull(archived_at)`: o gráfico de ritmo é
+        // memória. Se arquivar apagasse os dias passados, ligar o arquivamento
+        // automático de 3 dias achataria a linha de "concluídos" para zero em
+        // quase todo o período — exatamente o oposto do que aconteceu.
         $count = fn (string $column) => Card::query()
             ->whereIn('board_id', $boardIds)
-            ->whereNull('archived_at')
+            ->counted()
             ->where($column, '>=', $since)
             ->selectRaw("DATE({$column}) as day, COUNT(*) as total")
             ->groupBy('day')
@@ -166,10 +175,11 @@ class DashboardController extends Controller
         return $user->boards()
             ->whereNull('boards.archived_at')
             ->withCount([
-                'cards as total_count' => fn (Builder $q) => $q->whereNull('cards.archived_at'),
-                'cards as done_count' => fn (Builder $q) => $q
-                    ->whereNull('cards.archived_at')
-                    ->whereNotNull('cards.completed_at'),
+                // Total e concluídos seguem o recorte de progresso (o arquivado
+                // que já estava pronto continua contando dos dois lados);
+                // vencidos, não — arquivado não é mais problema de ninguém.
+                'cards as total_count' => fn (Builder $q) => $q->counted(),
+                'cards as done_count' => fn (Builder $q) => $q->whereNotNull('cards.completed_at'),
                 'cards as overdue_count' => fn (Builder $q) => $q
                     ->whereNull('cards.archived_at')
                     ->whereNull('cards.completed_at')

@@ -26,6 +26,13 @@ class BoardResource extends JsonResource
             'owner_id' => $this->owner_id,
             'is_favorite' => (bool) $membership?->pivot->is_favorite,
             'role' => $membership?->pivot->role,
+
+            // Dias até um concluído sair da coluna; null = desligado.
+            'auto_archive_days' => $this->auto_archive_done_after_days,
+
+            // Depende do loadCount do BoardController::show. Sem ele o menu
+            // mostraria "Arquivados" sempre vazio, em silêncio.
+            'archived_count' => (int) ($this->archived_cards_count ?? 0),
             'can' => [
                 'manage' => (bool) $user?->can('manage', $this->resource),
                 'delete' => (bool) $user?->can('delete', $this->resource),

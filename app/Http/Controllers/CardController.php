@@ -94,6 +94,86 @@ class CardController extends Controller
     }
 
     /**
+     * Tira o card do quadro sem apagá-lo.
+     *
+     * É a mesma porta que a varredura automática usa (App\Support\DoneCardArchiver);
+     * o que muda é quem puxa o gatilho e o fato de que aqui não é preciso estar
+     * concluído — arquivar na mão é como se guarda o que foi abandonado.
+     */
+    public function archive(Card $card): RedirectResponse
+    {
+        $this->authorize('update', $card->board);
+
+        if ($card->archived_at === null) {
+            // forceFill: archived_at não é fillable, e não deveria ser — nenhum
+            // formulário do app tem por que mandar essa coluna.
+            $card->forceFill(['archived_at' => now()])->save();
+
+            ActivityLogger::log($card->board, 'card.archived', "arquivou {$card->title}", $card);
+        }
+
+        // O caminho de volta vai junto com o aviso: o card acabou de sumir da
+        // tela, e "foi arquivado" sozinho não diz para onde ele foi.
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => "\"{$card->title}\" foi para Arquivados, no menu do quadro.",
+        ]);
+
+        // Redirect explícito, não back(): a URL anterior pode ser a do próprio
+        // card, e voltar para lá reabriria o modal de um card que não está mais
+        // no quadro.
+        return redirect()->route('boards.show', $card->board_id);
+    }
+
+    /**
+     * Devolve o card ao quadro — reaberto e no fim da fila.
+     *
+     * Reabrir não é capricho: um card que voltasse ainda concluído passaria de
+     * novo pelo filtro da varredura e sumiria na madrugada seguinte, e a pessoa
+     * ficaria restaurando o mesmo card todo dia. Quem resgata um concluído
+     * quer justamente mexer nele outra vez.
+     *
+     * Pela mesma razão ele não volta para a coluna de conclusão: um card aberto
+     * no meio dos prontos é invisível. Volta para a primeira coluna comum, e o
+     * toast diz para onde foi — o card não pode reaparecer num lugar que
+     * ninguém consegue adivinhar.
+     */
+    public function restore(Card $card): RedirectResponse
+    {
+        $this->authorize('update', $card->board);
+
+        abort_if($card->archived_at === null, 404);
+
+        $list = $card->list;
+
+        if ($list === null || $list->is_done) {
+            $list = $card->board->lists()
+                ->whereNull('archived_at')
+                ->where('is_done', false)
+                ->first() ?? $list;
+        }
+
+        // Quadro sem uma única coluna viva: não há para onde devolver.
+        abort_if($list === null, 404);
+
+        $card->forceFill([
+            'archived_at' => null,
+            'completed_at' => null,
+            'board_list_id' => $list->id,
+            'position' => ((float) $list->cards()->whereNull('archived_at')->max('position')) + 1,
+        ])->save();
+
+        ActivityLogger::log($card->board, 'card.restored', "restaurou {$card->title} em {$list->title}", $card);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => "\"{$card->title}\" voltou para {$list->title}.",
+        ]);
+
+        return back();
+    }
+
+    /**
      * Move o card para uma lista/posição. O cliente envia a ordem completa da
      * lista de destino — o servidor só materializa o que a UI já mostrou.
      */

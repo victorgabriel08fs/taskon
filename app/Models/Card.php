@@ -87,6 +87,28 @@ class Card extends Model
     }
 
     /**
+     * O recorte de PROGRESSO: o que ainda está no quadro, mais o que saiu de lá
+     * já concluído.
+     *
+     * Arquivar um concluído não pode apagar a conquista. Sem esta linha, ligar
+     * o arquivamento automático faria o painel afundar sozinho — o card sairia
+     * do total E do concluído, e a barra do quadro voltaria de 100% para 0%
+     * justamente por o trabalho ter terminado.
+     *
+     * Já o card arquivado SEM concluir foi abandonado de propósito: ele sai dos
+     * dois lados da conta, e a proporção sobe. É o efeito correto — tirar lixo
+     * da mesa não é regredir.
+     *
+     * @param  Builder<Card>  $query
+     */
+    public function scopeCounted(Builder $query): void
+    {
+        $query->where(fn (Builder $q) => $q
+            ->whereNull('cards.archived_at')
+            ->orWhereNotNull('cards.completed_at'));
+    }
+
+    /**
      * Cards vivos atribuídos ao usuário, em quadros de que ele ainda participa.
      *
      * O segundo whereHas não é redundante: sair de um quadro não apaga a
@@ -96,12 +118,20 @@ class Card extends Model
      * É a definição de "minhas tarefas" que o resumo diário e o painel
      * compartilham — se as duas divergirem, o e-mail vira mentira sobre a tela.
      *
+     * `$history` troca o recorte de "o que ainda está no quadro" por `counted()`:
+     * é o que conta o que foi FEITO (quantas concluí na semana), e não o que
+     * FALTA (o e-mail, o anel de prazos). Arquivado nunca entra em "falta".
+     *
      * @param  Builder<Card>  $query
      */
-    public function scopeAssignedTo(Builder $query, User $user): void
+    public function scopeAssignedTo(Builder $query, User $user, bool $history = false): void
     {
         $query
-            ->whereNull('cards.archived_at')
+            ->when(
+                $history,
+                fn (Builder $q) => $q->counted(),
+                fn (Builder $q) => $q->whereNull('cards.archived_at'),
+            )
             ->whereHas('members', fn (Builder $q) => $q->whereKey($user->getKey()))
             ->whereHas('board', fn (Builder $q) => $q
                 ->whereNull('boards.archived_at')

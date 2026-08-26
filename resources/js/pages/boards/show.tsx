@@ -18,6 +18,7 @@ import { CheckCheck, ClipboardList, Plus, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityPanel } from '@/components/board/activity-panel';
+import { ArchivedModal, type AutoArchiveConfig } from '@/components/board/archived-modal';
 import { BoardHeader } from '@/components/board/board-header';
 import { CardItem } from '@/components/board/card-item';
 import { CardModal } from '@/components/board/card-modal';
@@ -31,6 +32,7 @@ import { boardBackgroundClass } from '@/lib/palette';
 import { cn, pluralize } from '@/lib/utils';
 import type {
     Activity,
+    ArchivedCard,
     Board,
     BoardBackground,
     BoardList,
@@ -45,9 +47,12 @@ interface BoardShowProps {
     activeCard: CardDetail | null;
     backgrounds: BoardBackground[];
     colors: ColorKey[];
+    autoArchive: AutoArchiveConfig;
     activity?: Activity[];
     /** Prop `optional`: chega só quando a exportação a pede. */
     exportDetails?: CardExportDetail[];
+    /** Prop `optional`: chega só quando a gaveta de arquivados é aberta. */
+    archivedCards?: ArchivedCard[];
 }
 
 /** Assinatura da ordenação — usada para não disparar request quando nada mudou. */
@@ -64,8 +69,10 @@ export default function BoardShow({
     activeCard,
     backgrounds,
     colors,
+    autoArchive,
     activity,
     exportDetails,
+    archivedCards,
 }: BoardShowProps) {
     const user = usePage().props.auth.user!;
 
@@ -78,6 +85,7 @@ export default function BoardShow({
     const [selectMode, setSelectMode] = useState(false);
     const [selected, setSelected] = useState<Set<number>>(new Set());
     const [exportOpen, setExportOpen] = useState(false);
+    const [archivedOpen, setArchivedOpen] = useState(false);
 
     const isDragging = useRef(false);
     const snapshot = useRef('');
@@ -290,6 +298,18 @@ export default function BoardShow({
         if (!exportDetails) router.reload({ only: ['exportDetails'] });
     };
 
+    /*
+    ---------------------------------------------------------------- arquivados
+    */
+
+    // Ao contrário da exportação, a gaveta é pedida SEMPRE que abre: arquivar e
+    // restaurar mudam a lista, e uma cópia velha ofereceria "Restaurar" num
+    // card que já voltou para a coluna.
+    const openArchived = () => {
+        setArchivedOpen(true);
+        router.reload({ only: ['archivedCards'] });
+    };
+
     // Esc sai do modo seleção, mas não enquanto o modal está aberto: lá o Esc
     // é do modal, e sair dos dois de uma vez perderia a seleção sem querer.
     useEffect(() => {
@@ -319,6 +339,7 @@ export default function BoardShow({
                     onFiltersChange={setFilters}
                     onToggleActivity={() => setShowActivity((value) => !value)}
                     onStartExport={() => setSelectMode(true)}
+                    onOpenArchived={openArchived}
                     onDeleteBoard={() =>
                         confirm({
                             title: 'Excluir este quadro?',
@@ -419,6 +440,14 @@ export default function BoardShow({
                 details={exportDetails}
                 onToggleCard={(id) => setSelected((current) => new Set([...current].filter((item) => item !== id)))}
                 onClose={() => setExportOpen(false)}
+            />
+
+            <ArchivedModal
+                open={archivedOpen}
+                board={board}
+                config={autoArchive}
+                cards={archivedCards}
+                onClose={() => setArchivedOpen(false)}
             />
 
             <ActivityPanel open={showActivity} onClose={() => setShowActivity(false)} activity={activity} />

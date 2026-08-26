@@ -1,6 +1,8 @@
 import { router } from '@inertiajs/react';
 import {
     AlignLeft,
+    Archive,
+    ArchiveRestore,
     Calendar,
     Check,
     CheckSquare,
@@ -109,6 +111,25 @@ function CardModalBody({
             >
                 <X className="size-4.5" />
             </button>
+
+            {/* Um card arquivado continua abrindo pelo deep link — F5 numa aba
+                velha, um link colado no chat. Sem esta faixa o modal fingiria
+                que ele está na coluna, e a pessoa iria procurá-lo em vão. */}
+            {card.archived_at && (
+                <div className="flex flex-wrap items-center gap-3 border-b border-border bg-warning/12 px-6 py-3 pr-14">
+                    <Archive className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+
+                    <p className="min-w-0 flex-1 text-xs leading-relaxed text-muted-fg">
+                        Arquivado {formatRelative(card.archived_at)} — este card não está em nenhuma coluna do
+                        quadro.
+                    </p>
+
+                    <Button size="sm" variant="secondary" onClick={() => router.post(`/cards/${card.id}/restore`, {}, RELOAD)}>
+                        <ArchiveRestore className="size-4" />
+                        Restaurar
+                    </Button>
+                </div>
+            )}
 
             <div className="grid gap-6 p-6 md:grid-cols-[1fr_13rem]">
                 {/* ------------------------------------------------- coluna principal */}
@@ -362,12 +383,29 @@ function CardModalBody({
                     <AddChecklistButton cardId={card.id} />
 
                     <div className="pt-3">
+                        {/* Sem confirmação, de propósito: arquivar é reversível
+                            em um clique, e o toast diz para onde o card foi.
+                            Excluir, logo abaixo, é que não tem volta. */}
+                        {!card.archived_at && (
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    router.post(`/cards/${card.id}/archive`, {}, { preserveScroll: true })
+                                }
+                                className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-muted-fg transition-colors hover:bg-surface-2 hover:text-foreground"
+                            >
+                                <Archive className="size-4" />
+                                Arquivar card
+                            </button>
+                        )}
+
                         <button
                             type="button"
                             onClick={() =>
                                 confirm({
                                     title: 'Excluir este card?',
-                                    description: 'Comentários e checklists vão junto.',
+                                    description:
+                                        'Comentários e checklists vão junto, e não dá para desfazer. Para tirar do quadro sem perder nada, arquive.',
                                     confirmLabel: 'Excluir card',
                                     // O controller redireciona para o quadro; o
                                     // modal fecha sozinho quando activeCard some.

@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['title', 'description', 'background'])]
+#[Fillable(['title', 'description', 'background', 'auto_archive_done_after_days'])]
 #[UsePolicy(BoardPolicy::class)]
 class Board extends Model
 {
@@ -24,6 +24,7 @@ class Board extends Model
     {
         return [
             'archived_at' => 'datetime',
+            'auto_archive_done_after_days' => 'integer',
         ];
     }
 

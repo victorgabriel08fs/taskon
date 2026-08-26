@@ -104,12 +104,27 @@ export interface CardDetail {
     cover_color: ColorKey | null;
     due_at: string | null;
     completed_at: string | null;
+    /** Preenchido quando o card saiu do quadro — o deep link continua abrindo. */
+    archived_at: string | null;
     created_at: string;
     label_ids: number[];
     member_ids: number[];
     comments: Comment[];
     checklists: Checklist[];
     activities: Activity[];
+}
+
+/**
+ * O card visto da gaveta de arquivados. É de propósito mais magro que `Card`:
+ * a lista pode ter cem linhas e só precisa do bastante para reconhecê-lo.
+ */
+export interface ArchivedCard {
+    id: number;
+    title: string;
+    list_title: string | null;
+    due_at: string | null;
+    completed_at: string | null;
+    archived_at: string | null;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -163,6 +178,10 @@ export interface Board {
     is_favorite: boolean;
     role: BoardRole | null;
     can: { manage: boolean; delete: boolean };
+    /** Dias entre concluir o card e ele sair da coluna. `null` = desligado. */
+    auto_archive_days: number | null;
+    /** Quantos cards estão na gaveta — inclui os arquivados na mão. */
+    archived_count: number;
     members: User[];
     labels: Label[];
     lists: BoardList[];
