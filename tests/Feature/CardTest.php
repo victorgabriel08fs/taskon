@@ -46,6 +46,19 @@ class CardTest extends TestCase
         $this->assertEqualsWithDelta(2.0, $card->position, 0.001);
     }
 
+    public function test_whoever_creates_the_card_is_already_a_member_of_it(): void
+    {
+        // Sem isso o card nasce sem dono e some do "só os meus", do painel e do
+        // resumo diário de quem acabou de escrevê-lo.
+        $this->actingAs($this->user)
+            ->post("/lists/{$this->todo->id}/cards", ['title' => 'Nasce comigo'])
+            ->assertRedirect();
+
+        $card = Card::firstWhere('title', 'Nasce comigo');
+
+        $this->assertSame([$this->user->id], $card->members()->pluck('users.id')->all());
+    }
+
     public function test_moving_a_card_to_another_list_rewrites_the_order(): void
     {
         $first = Card::factory()->inList($this->doing, 1)->create();

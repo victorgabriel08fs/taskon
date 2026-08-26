@@ -21,15 +21,26 @@ class CardController extends Controller
             'title' => ['required', 'string', 'max:500'],
         ]);
 
-        $card = new Card([
-            'title' => $validated['title'],
-            'position' => ((float) $list->cards()->max('position')) + 1,
-        ]);
+        $card = DB::transaction(function () use ($request, $list, $validated): Card {
+            $card = new Card([
+                'title' => $validated['title'],
+                'position' => ((float) $list->cards()->max('position')) + 1,
+            ]);
 
-        $card->board_id = $list->board_id;
-        $card->board_list_id = $list->id;
-        $card->created_by = $request->user()->id;
-        $card->save();
+            $card->board_id = $list->board_id;
+            $card->board_list_id = $list->id;
+            $card->created_by = $request->user()->id;
+            $card->save();
+
+            // Quem escreve a tarefa já entra como responsável. Sem isso o card
+            // nasce sem dono: fica de fora do filtro "só os meus", do painel e
+            // do resumo diário de quem acabou de criá-lo — e tirar o próprio
+            // nome depois custa um clique, enquanto lembrar de se atribuir em
+            // cada card custa a atenção que o composer inline economiza.
+            $card->members()->attach($request->user()->id);
+
+            return $card;
+        });
 
         ActivityLogger::log($list->board, 'card.created', "adicionou {$card->title} em {$list->title}", $card);
 

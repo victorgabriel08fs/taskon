@@ -22,7 +22,7 @@
   A coluna marcada com ✓ conclui o card que receber (e reabre o que sair).
 - **Cards completos**: descrição, etiquetas coloridas, responsáveis, prazo com
   destaque de atraso, capa colorida, checklists com barra de progresso,
-  comentários e histórico.
+  comentários e histórico. Quem cria o card já entra como responsável dele.
 - **Filtros** por texto, etiqueta, responsável, "só os meus" e "esconder
   concluídos".
 - **Exportar como prompt**: entra no modo seleção, você marca os cards e sai um
