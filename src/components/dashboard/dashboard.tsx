@@ -149,7 +149,11 @@ export function Dashboard({ stats, breakdown, deadlines, trend, boards, horizonD
                             />
                         </div>
 
-                        <div data-reveal className="reveal mt-4 grid gap-4 lg:grid-cols-[1fr_22rem]">
+                        {/* 24rem, e não 22: é o mínimo para o anel (menor a partir
+                            de `lg`, ver DonutChart) e a legenda caberem lado a lado
+                            sem cortar os rótulos — com 22rem "Vencidas" e "Vencem
+                            hoje" viravam "Venci…" e "Venc…". */}
+                        <div data-reveal className="reveal mt-4 grid gap-4 lg:grid-cols-[1fr_24rem]">
                             <Panel
                                 title="Ritmo"
                                 subtitle={`Cards criados e concluídos nos últimos ${trend.length} dias, em todos os seus quadros`}
@@ -239,7 +243,11 @@ function Panel({
     children: ReactNode;
 }) {
     return (
-        <section className="rounded-xl bg-surface p-5 ring-1 ring-border">
+        // min-w-0: o painel é item de grid, e abaixo de `lg` a coluna é implícita
+        // (`auto`), que cresce até o conteúdo que não quebra — um título longo
+        // em "Próximos prazos" esticava a página inteira no celular. Com ele o
+        // `truncate` dos filhos passa a valer.
+        <section className="min-w-0 rounded-xl bg-surface p-5 ring-1 ring-border">
             <header className="mb-4 flex items-start justify-between gap-3">
                 <div className="min-w-0">
                     <h3 className="text-sm font-semibold">{title}</h3>

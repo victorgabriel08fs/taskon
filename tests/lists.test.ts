@@ -195,6 +195,29 @@ describe('reordenar colunas', () => {
         expect((await listRow(mine))?.position).toBe(2);
     });
 
+    it('id repetido vale pela última aparição, como no laço do legado', async () => {
+        const owner = await factory.createUser();
+        const board = await factory.createBoard(owner);
+        const a = await factory.createList(board, { position: 1 });
+        const b = await factory.createList(board, { position: 2 });
+        const c = await factory.createList(board, { position: 3 });
+
+        await reorderLists(owner, board.id, [a.id, b.id, c.id, a.id]);
+
+        expect(await orderOf(board)).toEqual([b.id, c.id, a.id]);
+        expect((await listRow(a))?.position).toBe(4);
+    });
+
+    it('só ids impossíveis: nada muda, e nada quebra no banco', async () => {
+        const owner = await factory.createUser();
+        const board = await factory.createBoard(owner);
+        const list = await factory.createList(board, { position: 1 });
+
+        await reorderLists(owner, board.id, [0, -1, 1.5, 2_147_483_648]);
+
+        expect((await listRow(list))?.position).toBe(1);
+    });
+
     it('quem é de fora não reordena', async () => {
         const board = await factory.createBoard(await factory.createUser());
         const list = await factory.createList(board, { position: 1 });

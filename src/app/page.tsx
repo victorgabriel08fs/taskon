@@ -1,8 +1,12 @@
 import type { Metadata } from 'next';
 import { Welcome } from '@/components/auth/welcome';
+import { config } from '@/server/config';
 
 export const metadata: Metadata = {
-    title: 'Organize qualquer coisa, arrastando',
+    // O `title.template` ("%s · Taskon") do layout raiz só vale para os
+    // segmentos FILHOS, não para a página do mesmo segmento: aqui o sufixo vai
+    // à mão, para a aba continuar "… · Taskon" como no legado.
+    title: { absolute: `Organize qualquer coisa, arrastando · ${config.appName}` },
 };
 
 /**

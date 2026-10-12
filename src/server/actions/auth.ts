@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { defineAction, toast } from '@/server/action';
 import type { AuthActions } from '@/server/actions/contract';
 import { endSession, requestMeta, safeRedirectPath, startSession } from '@/server/auth/session';
-import { flash } from '@/server/flash';
+import { flash, flashStatus } from '@/server/flash';
 import {
     authenticate,
     registerUser,
@@ -43,7 +43,9 @@ export const login = defineAction(
         await startSession(user.id, input.remember);
         await flash(toast('success', `Bem-vindo de volta, ${user.name}!`));
 
-        // O `redirect()->intended()`: volta para onde a pessoa tentou ir.
+        // O `redirect()->intended()`: volta para onde a pessoa tentou ir. O
+        // `next` vem do navegador; o que não for caminho deste site vai para o
+        // painel (ver safeRedirectPath).
         redirect(safeRedirectPath(input.next) ?? '/dashboard');
     },
     { auth: 'guest', refresh: false },
@@ -89,7 +91,11 @@ export const sendPasswordResetLink = defineAction(
     { auth: 'guest', refresh: false },
 ) satisfies AuthActions['sendPasswordResetLink'];
 
-/** Troca a senha pelo token do e-mail e manda para o login — o `NewPasswordController@store`. */
+/**
+ * Troca a senha pelo token do e-mail e manda para o login — o
+ * `NewPasswordController@store`. O aviso é o `->with('status', …)` do
+ * Laravel: a caixa verde da tela de login, e não um toast que some sozinho.
+ */
 export const resetPassword = defineAction(
     z
         .object({
@@ -103,7 +109,7 @@ export const resetPassword = defineAction(
         if (ctx) redirect('/dashboard');
 
         await resetPasswordWithToken(input);
-        await flash(toast('success', 'Sua senha foi redefinida. Entre com a nova senha.'));
+        await flashStatus('Sua senha foi redefinida. Entre com a nova senha.');
 
         redirect('/login');
     },

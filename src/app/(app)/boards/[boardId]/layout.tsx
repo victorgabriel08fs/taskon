@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { BoardShow } from '@/components/board/board-show';
 import { Forbidden } from '@/components/forbidden';
+import { parseRouteId } from '@/lib/route-id';
 import { currentUser, requireUser } from '@/server/auth/session';
 import { HttpError } from '@/server/errors';
 import { loadBoardActivity, loadBoardPage, loadBoardTitle, type BoardPageData } from '@/server/queries/board';
@@ -11,17 +12,8 @@ interface Params {
     params: Promise<{ boardId: string }>;
 }
 
-/** O id da URL, ou null se não for um inteiro positivo ("abc", "1.5", "0x10" viram 404). */
-function routeId(value: string): number | null {
-    if (!/^\d+$/.test(value)) return null;
-
-    const id = Number(value);
-
-    return Number.isSafeInteger(id) && id > 0 ? id : null;
-}
-
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
-    const id = routeId((await params).boardId);
+    const id = parseRouteId((await params).boardId);
     const user = await currentUser();
 
     if (id === null || !user) return {};
@@ -46,7 +38,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
  */
 export default async function BoardLayout({ children, params }: Params & { children: ReactNode }) {
     const user = await requireUser();
-    const id = routeId((await params).boardId);
+
+    // "abc", "1.5" ou um número acima do teto do `integer` não podem ser um
+    // quadro: 404 sem nem consultar o banco.
+    const id = parseRouteId((await params).boardId);
 
     if (id === null) notFound();
 

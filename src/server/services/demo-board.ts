@@ -82,6 +82,17 @@ const TOUR_STEPS: [content: string, done: boolean][] = [
     ['Abra o card e escreva uma descrição', false],
 ];
 
+export interface DemoBoardOptions {
+    /**
+     * Quem assina o "criou o quadro" no feed. No legado era o `Auth::id()` do
+     * ActivityLogger, então dependia de quem estava logado:
+     *  - no cadastro, a pessoa já tinha entrado (`Auth::login` antes do
+     *    builder) → ela mesma, que é o padrão daqui;
+     *  - no seed não havia ninguém → null, que o feed mostra como "Sistema".
+     */
+    actorId?: number | null;
+}
+
 function idOf(ids: Map<string, number>, key: string): number {
     const value = ids.get(key);
 
@@ -99,12 +110,19 @@ function idOf(ids: Map<string, number>, key: string): number {
  *
  * As inserções vão em lote (uma por tabela, e não uma por linha como no
  * Eloquent): em serverless cada consulta é uma ida e volta até o banco.
+ *
+ * O resto do conteúdo (dono, cards, responsável, comentário de exemplo) é
+ * sempre de `user`, como no legado; só o autor da atividade varia (ver
+ * `DemoBoardOptions.actorId`).
  */
 export async function buildDemoBoard(
     user: Pick<UserRow, 'id'>,
     title = 'Meu primeiro quadro',
     executor: Executor = db,
+    options: DemoBoardOptions = {},
 ): Promise<BoardRow> {
+    const actorId = options.actorId === undefined ? user.id : options.actorId;
+
     return executor.transaction(async (tx) => {
         const now = new Date();
 
@@ -198,7 +216,7 @@ export async function buildDemoBoard(
         });
 
         await logActivity(
-            { boardId: board.id, userId: user.id, type: 'board.created', description: `criou o quadro ${board.title}` },
+            { boardId: board.id, userId: actorId, type: 'board.created', description: `criou o quadro ${board.title}` },
             tx,
         );
 

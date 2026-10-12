@@ -1,11 +1,67 @@
 'use client';
 
 import { Plus, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { runAction } from '@/lib/actions';
 import { cn } from '@/lib/utils';
 import { createCard } from '@/server/actions/cards';
+import type { ActionResult } from '@/types';
+
+export interface Composer {
+    title: string;
+    setTitle: (value: string) => void;
+    /** Envia o que está no campo; false quando não havia nada para enviar. */
+    submit: () => boolean;
+    /** Algum envio ainda sem resposta. */
+    saving: boolean;
+}
+
+/**
+ * O envio dos compositores inline (card e lista). Cada envio leva o PRÓPRIO
+ * título e libera o campo na hora, como o `router.post` do Inertia, que não
+ * bloqueava: dá para escrever o próximo enquanto o anterior ainda está a
+ * caminho — e o Next despacha as actions em fila, na ordem. Nada é descartado
+ * por "ainda estar salvando": antes, o segundo Enter era ignorado e, quando o
+ * primeiro voltava, o texto do segundo era apagado.
+ *
+ * Se um envio falhar, o texto volta ao campo — a menos que a pessoa já esteja
+ * escrevendo outro — e o aviso do erro sai pelo `runAction`, como sempre.
+ */
+export function useComposer(create: (title: string) => Promise<ActionResult<unknown>>): Composer {
+    const [title, setTitleState] = useState('');
+    const [pending, setPending] = useState(0);
+
+    // Espelho síncrono do campo. O envio lê daqui, e não do `title` da
+    // closure: dois envios no mesmo tick (antes de o React re-renderizar)
+    // veriam o mesmo texto e criariam o item duas vezes. E a devolução, que
+    // roda quando a resposta chega, precisa do campo de AGORA.
+    const draft = useRef('');
+
+    const setTitle = useCallback((value: string) => {
+        draft.current = value;
+        setTitleState(value);
+    }, []);
+
+    const submit = () => {
+        const value = draft.current.trim();
+
+        if (!value) return false;
+
+        setTitle('');
+        setPending((count) => count + 1);
+
+        void runAction(() => create(value), {
+            onFinish: () => setPending((count) => count - 1),
+        }).then((result) => {
+            if (!result?.ok && !draft.current.trim()) setTitle(value);
+        });
+
+        return true;
+    };
+
+    return { title, setTitle, submit, saving: pending > 0 };
+}
 
 /**
  * Composer inline: Enter salva e mantém o campo aberto para o próximo card,
@@ -13,36 +69,17 @@ import { createCard } from '@/server/actions/cards';
  */
 export function AddCard({ listId, className }: { listId: number; className?: string }) {
     const [open, setOpen] = useState(false);
-    const [title, setTitle] = useState('');
-    const [saving, setSaving] = useState(false);
+    const { title, setTitle, submit: send, saving } = useComposer((value) => createCard({ listId, title: value }));
     const textarea = useRef<HTMLTextAreaElement>(null);
-
-    // A trava é uma ref (e não o `saving`) porque dois Enter seguidos chegam
-    // antes de o React re-renderizar: o segundo criaria o mesmo card de novo.
-    const inFlight = useRef(false);
 
     useEffect(() => {
         if (open) textarea.current?.focus();
     }, [open]);
 
     const submit = () => {
-        const value = title.trim();
-
-        if (!value || inFlight.current) return;
-
-        inFlight.current = true;
-        setSaving(true);
-
-        void runAction(createCard({ listId, title: value }), {
-            onSuccess: () => {
-                setTitle('');
-                requestAnimationFrame(() => textarea.current?.focus());
-            },
-            onFinish: () => {
-                inFlight.current = false;
-                setSaving(false);
-            },
-        });
+        // O campo já está livre para o próximo: o foco volta para ele (quem
+        // clicou em "Adicionar" o tinha levado para o botão).
+        if (send()) requestAnimationFrame(() => textarea.current?.focus());
     };
 
     const close = () => {

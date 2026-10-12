@@ -448,7 +448,7 @@ function IconAction({
  * `stroke-dashoffset` transiciona por CSS em vez de `motion`: o store repinta
  * uma vez por segundo e a transição de 1s linear costura os saltos. É a mesma
  * exceção da barra de checklist — elemento pequeno, isolado, sem reflow do
- * resto da página. O bloco de `prefers-reduced-motion` do app.css zera essa
+ * resto da página. O bloco de `prefers-reduced-motion` do globals.css zera essa
  * duração sozinho, e o anel passa a pular de segundo em segundo.
  */
 function Ring({

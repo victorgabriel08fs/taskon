@@ -7,7 +7,15 @@ import { sentMail } from '@/server/mail/mailer';
 /**
  * O `RefreshDatabase` do Laravel: o banco em memória deste arquivo recebe as
  * migrations uma vez e é zerado antes de cada teste.
+ *
+ * A trava abaixo é a mesma lição do tests/bootstrap.php do legado (que um dia
+ * apagou o banco de desenvolvimento em silêncio): o TRUNCATE só roda se o
+ * banco for o PGlite em memória, nunca um Postgres de verdade.
  */
+if (process.env.DATABASE_URL || process.env.PGLITE_DIR !== 'memory://') {
+    throw new Error('Os testes só rodam no PGlite em memória (DATABASE_URL vazia, PGLITE_DIR=memory://).');
+}
+
 beforeAll(async () => {
     await migrate(db as never, { migrationsFolder: './drizzle' });
 });

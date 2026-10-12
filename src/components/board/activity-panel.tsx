@@ -2,7 +2,7 @@
 
 import { History, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Component, Suspense, use, type ReactNode } from 'react';
+import { Component, Suspense, use, useEffect, type ReactNode } from 'react';
 import { TimeAgo } from '@/components/time-ago';
 import { Avatar } from '@/components/ui/avatar';
 import type { Activity } from '@/types';
@@ -21,6 +21,29 @@ export function ActivityPanel({
     onClose: () => void;
     activity: Promise<Activity[]>;
 }) {
+    // Esc fecha o painel — mas não quando já fechou um popover
+    // (defaultPrevented), nem com um diálogo aberto por cima (o card, uma
+    // confirmação: lá o Esc é do diálogo), nem dentro de um campo de texto (o
+    // título do quadro em edição no cabeçalho: ali o Esc cancela a edição).
+    useEffect(() => {
+        if (!open) return;
+
+        const onKey = (event: KeyboardEvent) => {
+            if (event.key !== 'Escape' || event.defaultPrevented) return;
+            if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
+            if (event.target instanceof HTMLElement && event.target.closest('input, textarea, [contenteditable="true"]')) {
+                return;
+            }
+
+            event.preventDefault();
+            onClose();
+        };
+
+        document.addEventListener('keydown', onKey);
+
+        return () => document.removeEventListener('keydown', onKey);
+    }, [open, onClose]);
+
     return (
         <AnimatePresence>
             {open && (
@@ -34,12 +57,17 @@ export function ActivityPanel({
                         aria-hidden
                     />
 
+                    {/* Começa ABAIXO do cabeçalho do app (h-14). O painel mora no
+                        <main> do quadro, que é `isolate`: o z-40 dele vale só lá
+                        dentro, e o cabeçalho sticky (z-30, fora do <main>) ficava
+                        por cima — escondendo o título e o botão Fechar. */}
                     <motion.aside
                         initial={{ x: '100%' }}
                         animate={{ x: 0 }}
                         exit={{ x: '100%' }}
                         transition={{ type: 'spring', stiffness: 320, damping: 34 }}
-                        className="fixed inset-y-0 right-0 z-40 flex w-full max-w-sm flex-col bg-surface shadow-[var(--shadow-float)] ring-1 ring-border"
+                        aria-label="Atividade do quadro"
+                        className="fixed bottom-0 right-0 top-14 z-40 flex w-full max-w-sm flex-col bg-surface shadow-[var(--shadow-float)] ring-1 ring-border"
                     >
                         <header className="flex items-center gap-2.5 border-b border-border px-5 py-4">
                             <History className="size-4.5 text-muted-fg" />

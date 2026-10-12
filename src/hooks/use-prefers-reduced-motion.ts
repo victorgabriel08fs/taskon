@@ -3,7 +3,7 @@ import { useSyncExternalStore } from 'react';
 const QUERY = '(prefers-reduced-motion: reduce)';
 
 /**
- * O bloco global do `app.css` zera transição e animação CSS, mas não alcança
+ * O bloco global do `globals.css` zera transição e animação CSS, mas não alcança
  * nada que o `motion` anime por JS (BOAS_PRATICAS §12.6) — aí a checagem tem
  * de ser explícita.
  *

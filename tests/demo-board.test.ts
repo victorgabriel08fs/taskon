@@ -14,9 +14,15 @@ import {
     checklists,
     comments,
     labels,
+    users,
 } from '@/server/db/schema';
 import { buildDemoBoard } from '@/server/services/demo-board';
+import { seedDatabase } from '../scripts/seed';
 import { createUser } from './support/factories';
+
+// O preparo dos scripts carrega o .env/.env.local no process.env — nos testes
+// o ambiente é o do vitest.config.ts, e só isso.
+vi.mock('../scripts/_bootstrap', () => ({}));
 
 /**
  * O quadro de boas-vindas (o antigo `DemoBoardBuilder`): é a primeira tela de
@@ -204,7 +210,7 @@ describe('buildDemoBoard', () => {
         });
     });
 
-    it('registra a criação no feed em nome de quem é dono', async () => {
+    it('registra a criação no feed em nome de quem é dono (o cadastro: a pessoa já entrou)', async () => {
         const user = await createUser();
         const board = await buildDemoBoard(user);
 
@@ -220,6 +226,44 @@ describe('buildDemoBoard', () => {
         });
     });
 
+    it('sem ninguém logado (o seed), a criação sai como do sistema — o resto continua do dono', async () => {
+        const user = await createUser();
+        const board = await buildDemoBoard(user, 'Pessoal', db, { actorId: null });
+
+        const feed = await db.select().from(activities).where(eq(activities.boardId, board.id));
+
+        expect(feed).toHaveLength(1);
+        expect(feed[0]).toMatchObject({ userId: null, type: 'board.created', description: 'criou o quadro Pessoal' });
+
+        // O ator só muda a assinatura da atividade: dono, autor dos cards,
+        // responsável e o comentário de exemplo seguem sendo de `user`.
+        expect(board.ownerId).toBe(user.id);
+
+        const created = await db
+            .select({ id: cards.id, createdBy: cards.createdBy })
+            .from(cards)
+            .where(eq(cards.boardId, board.id));
+        const ids = created.map((row) => row.id);
+        const assignees = await db.select().from(cardUser).where(inArray(cardUser.cardId, ids));
+        const notes = await db.select().from(comments).where(inArray(comments.cardId, ids));
+
+        expect(created).toHaveLength(7);
+        expect(created.every((row) => row.createdBy === user.id)).toBe(true);
+        expect(assignees.every((row) => row.userId === user.id)).toBe(true);
+        expect(notes.map((note) => note.userId)).toEqual([user.id]);
+    });
+
+    it('aceita outro ator explícito', async () => {
+        const owner = await createUser();
+        const actor = await createUser();
+        const board = await buildDemoBoard(owner, undefined, db, { actorId: actor.id });
+
+        const [created] = await db.select().from(activities).where(eq(activities.boardId, board.id));
+
+        expect(created?.userId).toBe(actor.id);
+        expect(board.ownerId).toBe(owner.id);
+    });
+
     it('vira savepoint dentro de uma transação maior — e some junto com ela', async () => {
         const user = await createUser();
 
@@ -233,5 +277,46 @@ describe('buildDemoBoard', () => {
 
         expect(await db.select().from(boards)).toHaveLength(0);
         expect(await db.select().from(cards)).toHaveLength(0);
+    });
+});
+
+/**
+ * O seed (o antigo DatabaseSeeder) monta os quadros pelo builder. No legado o
+ * `Auth::id()` do ActivityLogger era null ali — ninguém logado num
+ * `db:seed` —, e o feed mostrava "Sistema".
+ */
+describe('seedDatabase', () => {
+    it('assina como sistema o "criou o quadro" de TODOS os quadros, e o histórico não gera atividade', async () => {
+        await seedDatabase();
+
+        const feed = await db
+            .select({
+                board: boards.title,
+                userId: activities.userId,
+                type: activities.type,
+                description: activities.description,
+            })
+            .from(activities)
+            .innerJoin(boards, eq(boards.id, activities.boardId))
+            .orderBy(asc(activities.id));
+
+        // Só a criação de cada quadro: os cards do paintHistory entram direto
+        // no banco, como no DatabaseSeeder (sem ActivityLogger).
+        expect(feed).toEqual([
+            {
+                board: 'Lançamento do Taskon',
+                userId: null,
+                type: 'board.created',
+                description: 'criou o quadro Lançamento do Taskon',
+            },
+            { board: 'Pessoal', userId: null, type: 'board.created', description: 'criou o quadro Pessoal' },
+        ]);
+
+        // O conteúdo continua sendo do Victor; só a assinatura do feed mudou.
+        const [victor] = await db.select().from(users).where(eq(users.email, 'victor@taskon.test'));
+        const owners = await db.select({ ownerId: boards.ownerId }).from(boards);
+
+        expect(owners).toHaveLength(2);
+        expect(owners.every((row) => row.ownerId === victor?.id)).toBe(true);
     });
 });

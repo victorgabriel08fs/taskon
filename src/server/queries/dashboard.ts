@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { and, asc, count, desc, eq, gte, inArray, isNotNull, isNull, lt, lte, sql } from 'drizzle-orm';
+import { and, count, desc, eq, gte, inArray, isNotNull, isNull, lt, lte, sql } from 'drizzle-orm';
 import type { Activity, BoardProgress, DashboardStats, Deadline, DueBreakdown, TrendPoint } from '@/types';
 import { APP_TIMEZONE, addAppDays, startOfAppDay, wallClock } from '@/lib/timezone';
 import { config } from '@/server/config';
@@ -22,9 +22,11 @@ import { dayBoundaries, taskDigestFor } from '@/server/services/task-digest';
  *   - "Seus quadros" — tudo que existe nos quadros de que ela participa,
  *     incluindo o trabalho dos colegas.
  *
- * São ~10 consultas, todas agregadas: nenhuma traz linha que a tela não use.
- * As independentes saem juntas — no Postgres da Vercel cada ida ao banco é uma
- * viagem de rede, e somá-las em fila atrasaria a primeira pintura à toa.
+ * São ~10 consultas, todas agregadas: só a do progresso traz linhas que a
+ * tela não mostra (uma por quadro, para a ordem pelo título sair igual à do
+ * legado — ver `boardProgress`). As independentes saem juntas — no Postgres
+ * da Vercel cada ida ao banco é uma viagem de rede, e somá-las em fila
+ * atrasaria a primeira pintura à toa.
  */
 
 /** Dias do gráfico de ritmo. 14 cabe em duas semanas cheias sem virar borrão. */
@@ -225,21 +227,33 @@ async function trend(userId: number, now: Date): Promise<TrendPoint[]> {
 }
 
 /**
- * Progresso dos quadros vivos da pessoa, os mais cheios primeiro.
+ * A ordem dos títulos no desempate: a do MariaDB do legado
+ * (`utf8mb4_unicode_ci`), que não diferencia caixa nem acento. O Postgres
+ * ordenaria pela collation do banco — no PGlite é a "C", byte a byte:
+ * "Zeta" antes de "alfa", e "Ágil" depois de "Zeta".
+ */
+const TITLE_ORDER = new Intl.Collator('pt-BR', { sensitivity: 'base' });
+
+/**
+ * Progresso dos quadros vivos da pessoa, os mais cheios primeiro; empate,
+ * pelo título; títulos iguais sem caixa e acento ("alfa" e "Alfa"), o mais
+ * antigo.
  *
  * Total e concluídos seguem o recorte de progresso (o arquivado que já estava
  * pronto continua contando dos dois lados); vencidos, não — arquivado não é
  * mais problema de ninguém.
  */
 async function boardProgress(userId: number, now: Date): Promise<BoardProgress[]> {
-    const total = sql<number>`count(${cards.id}) filter (where ${counted()})`.mapWith(Number);
-
+    // Sem ORDER BY nem LIMIT: a ordem sai do Intl.Collator, aqui no Node, e
+    // só depois dela o corte dos seis — cortar antes no banco escolheria os
+    // seis pela collation dele. O banco já agrega todos os quadros da pessoa
+    // de qualquer jeito; o que muda é trazer uma linha por quadro, poucas.
     const rows = await db
         .select({
             id: boards.id,
             title: boards.title,
             background: boards.background,
-            total,
+            total: sql<number>`count(${cards.id}) filter (where ${counted()})`.mapWith(Number),
             done: sql<number>`count(${cards.id}) filter (where ${isNotNull(cards.completedAt)})`.mapWith(Number),
             overdue: sql<number>`count(${cards.id}) filter (where ${and(
                 isNull(cards.archivedAt),
@@ -252,9 +266,10 @@ async function boardProgress(userId: number, now: Date): Promise<BoardProgress[]
         .innerJoin(boardUser, and(eq(boardUser.boardId, boards.id), eq(boardUser.userId, userId)))
         .leftJoin(cards, eq(cards.boardId, boards.id))
         .where(isNull(boards.archivedAt))
-        .groupBy(boards.id)
-        .orderBy(desc(total), asc(boards.title))
-        .limit(TOP_BOARDS);
+        .groupBy(boards.id);
 
-    return rows.map(boardProgressResource);
+    return rows
+        .sort((a, b) => b.total - a.total || TITLE_ORDER.compare(a.title, b.title) || a.id - b.id)
+        .slice(0, TOP_BOARDS)
+        .map(boardProgressResource);
 }

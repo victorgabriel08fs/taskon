@@ -3,7 +3,7 @@ import type { AvatarColor, BoardBackground, ColorKey } from '@/types';
 /**
  * O Tailwind só gera a classe que enxerga escrita por extenso no código, então
  * cores dinâmicas viram um mapa estático de chave → classes.
- * As chaves espelham config/taskon.php.
+ * As chaves espelham BACKGROUNDS, COLORS e AVATAR_COLORS de src/server/config.ts.
  */
 
 export const COLOR_KEYS: ColorKey[] = [

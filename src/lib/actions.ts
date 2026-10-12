@@ -11,13 +11,23 @@ import type { ActionResult, FieldErrors, Toast } from '@/types';
  *  - mostra o toast que o servidor mandou (o antigo `Inertia::flash`);
  *  - transforma 403/404/500 sem mensagem em aviso legível;
  *  - manda para o login quando a sessão expirou (401);
- *  - trata queda de rede/deploy novo como "não salvou", nunca em silêncio.
+ *  - trata queda de rede/deploy novo como "não salvou", nunca em silêncio;
+ *  - liga a barra de progresso do topo enquanto espera, como o Inertia fazia
+ *    em todo POST/PATCH/DELETE.
  *
  * A página em si NÃO precisa ser recarregada aqui: a action chama `refresh()`
  * no servidor e a árvore nova volta na mesma resposta.
  */
 
 const NETWORK_ERROR = 'Sem conexão com o servidor. Suas alterações locais não foram salvas.';
+
+/**
+ * Começo e fim de cada action, para a barra de progresso
+ * (src/components/navigation-progress.tsx, que conta as pendentes). Sempre aos
+ * pares: o fim sai no `finally`, inclusive quando a action redireciona.
+ */
+export const ACTION_START_EVENT = 'taskon:action-start';
+export const ACTION_END_EVENT = 'taskon:action-end';
 
 /**
  * Action que termina em `redirect()` não resolve a Promise: o Next a REJEITA
@@ -42,12 +52,27 @@ export interface RunOptions<T> {
     onSuccess?: (data: T) => void;
     onError?: (result: Extract<ActionResult<T>, { ok: false }>) => void;
     onFinish?: () => void;
+    /**
+     * `false` dispensa a barra de progresso — o `showProgress: false` do
+     * Inertia, para gravações que a tela já mostrou (o arraste de cards e
+     * listas): uma barra ali sugeriria que o card ainda não foi.
+     */
+    progress?: boolean;
 }
 
+/**
+ * Prefira passar uma FUNÇÃO (`() => acao(dados)`): assim o aviso de começo sai
+ * antes de a action ser despachada. Uma Promise já criada também serve — o
+ * aviso sai no mesmo tick.
+ */
 export async function runAction<T>(
     call: Promise<ActionResult<T>> | (() => Promise<ActionResult<T>>),
     options: RunOptions<T> = {},
 ): Promise<ActionResult<T> | null> {
+    const progress = options.progress !== false;
+
+    if (progress) window.dispatchEvent(new Event(ACTION_START_EVENT));
+
     try {
         const result = await (typeof call === 'function' ? call() : call);
 
@@ -75,6 +100,8 @@ export async function runAction<T>(
 
         return null;
     } finally {
+        if (progress) window.dispatchEvent(new Event(ACTION_END_EVENT));
+
         // Se a action redirecionou, o aviso dela está num cookie de flash.
         window.dispatchEvent(new Event('taskon:flash'));
         options.onFinish?.();
@@ -158,7 +185,8 @@ export function useActionForm<TData extends Record<string, unknown>, TResult = n
         async (options: RunOptions<TResult> = {}) => {
             setProcessing(true);
 
-            return runAction(action(data), {
+            return runAction(() => action(data), {
+                progress: options.progress,
                 onSuccess: (result) => {
                     setErrors({});
                     setRecentlySuccessful(true);

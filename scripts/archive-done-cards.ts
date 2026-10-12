@@ -10,6 +10,7 @@
  * (/api/cron/archive-done-cards); as duas portas usam o mesmo serviço.
  */
 import './_bootstrap';
+import { MAX_ID } from '@/server/validation';
 
 function option(args: string[], name: string): string | null {
     const inline = args.find((arg) => arg.startsWith(`--${name}=`));
@@ -27,7 +28,7 @@ async function main() {
     const board = option(args, 'board');
     const boardId = board === null ? null : Number(board);
 
-    if (boardId !== null && (!Number.isInteger(boardId) || boardId <= 0)) {
+    if (boardId !== null && (!Number.isInteger(boardId) || boardId <= 0 || boardId > MAX_ID)) {
         console.error('✗ --board precisa ser o id numérico de um quadro.');
         process.exit(1);
     }

@@ -1,6 +1,7 @@
 import { pruneRateLimits } from '@/server/auth/rate-limit';
 import { pruneExpiredSessions } from '@/server/auth/session';
 import { authorizedCron, queryFlag } from '@/server/cron';
+import { MAX_ID } from '@/server/validation';
 import { describeSweep, sweepBoards } from '@/server/services/done-card-archiver';
 
 /**
@@ -32,7 +33,7 @@ export async function GET(request: Request): Promise<Response> {
     const board = params.get('board');
     const boardId = board === null ? null : Number(board);
 
-    if (boardId !== null && (!Number.isInteger(boardId) || boardId <= 0)) {
+    if (boardId !== null && (!Number.isInteger(boardId) || boardId <= 0 || boardId > MAX_ID)) {
         return Response.json({ error: '`board` precisa ser o id numérico de um quadro.' }, { status: 422 });
     }
 

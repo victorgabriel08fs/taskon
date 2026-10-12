@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { and, asc, eq, gt, isNull, lt, or, type SQL } from 'drizzle-orm';
+import { and, asc, eq, gt, isNull, lt, or, sql, type SQL } from 'drizzle-orm';
 import { dayKey, endOfAppDay, startOfAppDay, toAppIso } from '@/lib/timezone';
 import { config } from '@/server/config';
 import { db } from '@/server/db';
@@ -8,6 +8,7 @@ import { users, type UserRow } from '@/server/db/schema';
 import { digestMessage, formatRunDate } from '@/server/mail/daily-digest';
 import { mailerName, sendMail } from '@/server/mail/mailer';
 import { isDigestEmpty, taskDigestFor, type TaskDigest } from '@/server/services/task-digest';
+import { MAX_ID } from '@/server/validation';
 
 /**
  * O resumo diário por e-mail: o antigo comando `taskon:daily-digest` (agora
@@ -27,7 +28,11 @@ import { isDigestEmpty, taskDigestFor, type TaskDigest } from '@/server/services
 export interface DailyDigestOptions {
     /** O instante do disparo — todo mundo do lote é avaliado no mesmo. */
     now?: Date;
-    /** Manda só para esta pessoa: id numérico ou e-mail. */
+    /**
+     * Manda só para esta pessoa: id numérico ou e-mail. Ausente
+     * (`null`/`undefined`) é todo mundo; presente e vazio não casa com
+     * ninguém (ver `recipientFilter`).
+     */
     user?: number | string | null;
     /** Ignora o opt-out e o carimbo de "já enviado hoje" (e envia mesmo vazio). */
     force?: boolean;
@@ -61,15 +66,60 @@ export async function sendDigestEmail(digest: TaskDigest): Promise<void> {
     await sendMail(digestMessage(digest));
 }
 
-/** `--user=`: id numérico ou e-mail (os e-mails são gravados em minúsculas). */
+/**
+ * `--user=` / `?user=`: id numérico ou e-mail (os e-mails são gravados em
+ * minúsculas).
+ *
+ * Opção AUSENTE é "todo mundo"; opção PRESENTE e vazia (ou só espaços) é um
+ * filtro que não casa com ninguém — no artisan, `--user=` virava
+ * `where email = ''`. Ler o vazio como "sem filtro" faria um
+ * `?user=&force=1` digitado pela metade mandar o resumo para a base inteira,
+ * opt-out incluído.
+ *
+ * Id grande demais para a coluna também não casa com ninguém: o Postgres
+ * recusaria o parâmetro e o disparo inteiro cairia com 500, onde o MySQL do
+ * legado só não achava a pessoa.
+ */
 function recipientFilter(only: number | string | null | undefined): SQL | undefined {
     if (only === null || only === undefined) return undefined;
 
     const value = String(only).trim();
 
-    if (value === '') return undefined;
+    if (/^\d+$/.test(value)) {
+        const id = Number(value);
 
-    return /^\d+$/.test(value) ? eq(users.id, Number(value)) : eq(users.email, value.toLowerCase());
+        return id <= MAX_ID ? eq(users.id, id) : sql`false`;
+    }
+
+    return value === '' ? sql`false` : eq(users.email, value.toLowerCase());
+}
+
+/**
+ * As opções de `npm run digest -- …`, lidas como o Symfony Console lia a
+ * assinatura do comando artisan (`{--user=} {--force} {--dry-run}`):
+ *
+ *  - `--user=12` ou `--user 12` → só esta pessoa;
+ *  - `--user=` ou `--user ""` → filtro vazio: ninguém recebe;
+ *  - `--user` sem valor (no fim, ou seguido de outra opção) → como se não
+ *    tivesse sido passado: todo mundo.
+ *
+ * A última ocorrência vale. Mora aqui, e não no script, para o teste
+ * alcançá-la: importar o script o executaria.
+ */
+export function digestOptionsFromArgs(args: readonly string[]): Pick<DailyDigestOptions, 'user' | 'force' | 'dryRun'> {
+    let user: string | null = null;
+
+    for (const [index, arg] of args.entries()) {
+        if (arg.startsWith('--user=')) {
+            user = arg.slice('--user='.length);
+        } else if (arg === '--user') {
+            const next = args[index + 1];
+
+            user = next !== undefined && !next.startsWith('-') ? next : null;
+        }
+    }
+
+    return { user, force: args.includes('--force'), dryRun: args.includes('--dry-run') };
 }
 
 type Recipient = Pick<UserRow, 'id' | 'name' | 'email' | 'digestLastSentAt'>;

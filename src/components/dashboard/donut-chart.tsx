@@ -13,6 +13,7 @@ export interface DonutSegment {
     color: string;
 }
 
+/** Coordenadas do desenho (viewBox). Na tela: 184px, ou 144px a partir de `lg`. */
 const SIZE = 184;
 const RADIUS = 72;
 const STROKE = 18;
@@ -45,9 +46,15 @@ export function DonutChart({ segments, caption }: { segments: DonutSegment[]; ca
     }
 
     return (
-        <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-center sm:gap-6">
-            <div className="relative shrink-0" style={{ width: SIZE, height: SIZE }}>
-                <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} className="-rotate-90">
+        // A partir de `lg` o anel fica na coluna estreita do Painel (24rem, ver
+        // dashboard.tsx) e encolhe para 144px — o viewBox escala o desenho
+        // junto. É o que deixa a legenda larga o bastante para os rótulos
+        // aparecerem inteiros ("Próximos 30 dias" com contagem de três
+        // dígitos inclusive) sem empilhar a legenda, o que deixaria o cartão
+        // bem mais alto que o do "Ritmo" ao lado.
+        <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-center sm:gap-6 lg:gap-4">
+            <div className="relative size-46 shrink-0 lg:size-36">
+                <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="size-full -rotate-90">
                     <circle
                         cx={SIZE / 2}
                         cy={SIZE / 2}

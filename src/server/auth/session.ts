@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { createHash, randomBytes } from 'node:crypto';
-import { and, eq, gt, lte, ne } from 'drizzle-orm';
+import { and, eq, gt, lte } from 'drizzle-orm';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
@@ -84,15 +84,6 @@ export async function endSession(): Promise<void> {
     jar.delete(SESSION_COOKIE);
 }
 
-/** Derruba todas as sessões do usuário — menos, opcionalmente, a atual. */
-export async function endOtherSessions(userId: number, keepCurrent: boolean): Promise<void> {
-    const current = keepCurrent ? await currentSession() : null;
-
-    await db
-        .delete(sessions)
-        .where(current ? and(eq(sessions.userId, userId), ne(sessions.id, current.session.id)) : eq(sessions.userId, userId));
-}
-
 /**
  * A sessão e o usuário desta requisição, ou null. Memoizado por requisição
  * (`cache` do React): layout, página e componentes podem chamar à vontade.
@@ -129,9 +120,8 @@ export async function currentUser(): Promise<UserRow | null> {
 
 /** Caminho que o proxy anota na requisição — vira o `?next=` do login. */
 async function requestedPath(): Promise<string | null> {
-    const path = (await headers()).get('x-taskon-path');
-
-    return path && safeRedirectPath(path) ? path : null;
+    // Já na forma normalizada: é ela que o login vai receber de volta.
+    return safeRedirectPath((await headers()).get('x-taskon-path'));
 }
 
 /**
@@ -155,14 +145,52 @@ export async function redirectIfAuthenticated(): Promise<void> {
     if (await currentUser()) redirect('/dashboard');
 }
 
+/** Origem fictícia (o TLD .invalid nunca resolve): só serve para o `URL` normalizar o caminho. */
+const REDIRECT_BASE = 'http://taskon.invalid';
+
+/** Absoluto no próprio site: "/x" sim; "//x" é outro domínio (URL relativa ao protocolo). */
+const isSitePath = (path: string) => path.startsWith('/') && !path.startsWith('//');
+
 /**
- * Aceita só caminhos internos ("/boards/1"). Bloqueia "//evil.com",
- * "/\evil.com" e URLs absolutas — senão o `?next=` vira redirecionamento aberto.
+ * Caractere de controle (U+0000–U+001F, U+007F) ou barra invertida, em
+ * qualquer posição. O navegador APAGA TAB, CR e LF de qualquer ponto da URL
+ * ("/\t/evil.com" vira "//evil.com", outro domínio) e trata "\" como "/" em
+ * URLs http(s) ("/\evil.com" também é "//evil.com"). Caminho legítimo não tem
+ * nenhum dos dois — eles chegam codificados (%09, %5C), e esses passam.
+ */
+function hasControlOrBackslash(path: string): boolean {
+    for (let index = 0; index < path.length; index++) {
+        const code = path.charCodeAt(index);
+
+        if (code <= 0x1f || code === 0x7f || code === 0x5c) return true;
+    }
+
+    return false;
+}
+
+/**
+ * Aceita só caminhos internos ("/boards/1?x=1#y") e devolve a forma
+ * NORMALIZADA — senão o `?next=` vira redirecionamento aberto.
+ *
+ * Checar prefixo não basta: o navegador limpa e resolve a URL antes de
+ * segui-la. Por isso, além de recusar controle e "\", o caminho passa pelo
+ * mesmo algoritmo do navegador (o `URL` do WHATWG) e a decisão vale para o
+ * resultado — que é o que sai daqui. A segunda checagem pega o que só vira
+ * outro domínio depois de normalizado: "/.//evil.com" e "/a/..//evil.com"
+ * resolvem para "//evil.com".
  */
 export function safeRedirectPath(path: string | null | undefined): string | null {
-    if (!path || !path.startsWith('/') || path.startsWith('//') || path.startsWith('/\\')) return null;
+    if (!path || hasControlOrBackslash(path) || !isSitePath(path)) return null;
 
-    return path;
+    // Caminho que começa com "/" sobre uma base http não tem como falhar no
+    // parser; a origem é conferida mesmo assim, como última trava.
+    const url = new URL(path, REDIRECT_BASE);
+
+    if (url.origin !== REDIRECT_BASE) return null;
+
+    const normalized = url.pathname + url.search + url.hash;
+
+    return isSitePath(normalized) ? normalized : null;
 }
 
 /** Faxina oportunista das sessões vencidas (chamada pelos crons). */

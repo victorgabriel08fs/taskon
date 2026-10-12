@@ -177,6 +177,8 @@ export async function registerUser(
                 .returning();
 
             // Todo mundo entra com um quadro de exemplo pronto — nada de tela vazia.
+            // O "criou o quadro" sai em nome da própria pessoa (o padrão do
+            // builder): no legado ela já estava logada quando o quadro nascia.
             await buildDemoBoard(user, undefined, tx);
 
             return user;

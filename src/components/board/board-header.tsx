@@ -85,7 +85,9 @@ export function BoardHeader({
                             setEditing(false);
                         }
                     }}
-                    className="w-56 rounded-lg bg-white/95 px-2.5 py-1.5 text-base font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-white"
+                    // min-w-0: no celular o campo encolhe em vez de empurrar as
+                    // ações para baixo do cronômetro.
+                    className="w-56 min-w-0 rounded-lg bg-white/95 px-2.5 py-1.5 text-base font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-white"
                 />
             ) : (
                 <button
@@ -130,12 +132,21 @@ export function BoardHeader({
                     Exportar
                 </button>
 
-                <button type="button" onClick={onToggleActivity} className={cn(ghost, 'hidden md:inline-flex')}>
+                {/* A partir de `lg`, como o Exportar: no tablet o cabeçalho não
+                    comporta o botão, e "Ver atividade" está no menu "…". */}
+                <button type="button" onClick={onToggleActivity} className={cn(ghost, 'hidden lg:inline-flex')}>
                     <History className="size-4" />
                     Atividade
                 </button>
 
-                {board.can.manage && <BackgroundPopover board={board} backgrounds={backgrounds} />}
+                {/* Abaixo de `sm` a paleta de fundo vai para o menu "…" (como
+                    Exportar e Atividade, que também se recolhem nele quando
+                    falta largura): a linha do cabeçalho não comporta o botão. */}
+                {board.can.manage && (
+                    <div className="hidden sm:contents">
+                        <BackgroundPopover board={board} backgrounds={backgrounds} />
+                    </div>
+                )}
 
                 <Popover
                     align="right"
@@ -186,6 +197,18 @@ export function BoardHeader({
                                 )}
                             </PopoverItem>
 
+                            {/* Só no celular: o botão de fundo do cabeçalho some
+                                abaixo de `sm` e a paleta mora aqui. */}
+                            {board.can.manage && (
+                                <div className="sm:hidden">
+                                    <div className="my-1 h-px bg-border" />
+                                    <p className="px-2.5 pb-0.5 pt-1.5 text-xs font-semibold uppercase tracking-wide text-muted-fg">
+                                        Fundo do quadro
+                                    </p>
+                                    <BackgroundGrid board={board} backgrounds={backgrounds} />
+                                </div>
+                            )}
+
                             {board.can.delete && (
                                 <>
                                     <div className="my-1 h-px bg-border" />
@@ -221,27 +244,32 @@ function BackgroundPopover({ board, backgrounds }: { board: Board; backgrounds: 
                 </button>
             )}
         >
-            {() => (
-                <div className="grid grid-cols-4 gap-2 p-1.5">
-                    {backgrounds.map((background) => (
-                        <button
-                            key={background}
-                            type="button"
-                            title={BOARD_BACKGROUND_LABEL[background]}
-                            aria-label={BOARD_BACKGROUND_LABEL[background]}
-                            aria-pressed={board.background === background}
-                            onClick={() => void runAction(updateBoard({ boardId: board.id, background }))}
-                            className={cn(
-                                'h-11 rounded-lg transition-transform duration-150 hover:scale-105 active:scale-95',
-                                boardBackgroundClass(background),
-                                board.background === background &&
-                                    'ring-2 ring-primary ring-offset-2 ring-offset-[var(--surface)]',
-                            )}
-                        />
-                    ))}
-                </div>
-            )}
+            {() => <BackgroundGrid board={board} backgrounds={backgrounds} />}
         </Popover>
+    );
+}
+
+/** A paleta de fundos — no popover do cabeçalho e, no celular, no menu "…". */
+function BackgroundGrid({ board, backgrounds }: { board: Board; backgrounds: BoardBackground[] }) {
+    return (
+        <div className="grid grid-cols-4 gap-2 p-1.5">
+            {backgrounds.map((background) => (
+                <button
+                    key={background}
+                    type="button"
+                    title={BOARD_BACKGROUND_LABEL[background]}
+                    aria-label={BOARD_BACKGROUND_LABEL[background]}
+                    aria-pressed={board.background === background}
+                    onClick={() => void runAction(updateBoard({ boardId: board.id, background }))}
+                    className={cn(
+                        'h-11 rounded-lg transition-transform duration-150 hover:scale-105 active:scale-95',
+                        boardBackgroundClass(background),
+                        board.background === background &&
+                            'ring-2 ring-primary ring-offset-2 ring-offset-[var(--surface)]',
+                    )}
+                />
+            ))}
+        </div>
     );
 }
 
@@ -252,7 +280,10 @@ function InvitePopover({ board }: { board: Board }) {
 
     return (
         <Popover
-            className="w-80"
+            // Abaixo de `md` o botão fica perto da borda direita e o painel de
+            // 20rem, aberto para a direita, sairia da tela: ali ele abre para
+            // a esquerda.
+            className="w-80 max-md:left-auto max-md:right-0"
             title="Convidar para o quadro"
             trigger={({ toggle }) => (
                 <button

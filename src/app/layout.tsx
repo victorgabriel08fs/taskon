@@ -33,12 +33,18 @@ export const viewport: Viewport = {
 const APPEARANCES: Appearance[] = ['light', 'dark', 'system'];
 
 /**
- * Aplica o tema antes do primeiro paint. O cookie `appearance` (escrito por
- * use-appearance.ts) já decide claro/escuro no SSR; só o "sistema" depende do
- * navegador, e é isso que o script resolve antes de pintar.
+ * Aplica o tema antes do primeiro paint, a partir do cookie `appearance`
+ * (escrito por use-appearance.ts) — o "sistema" se resolve aqui mesmo, pelo
+ * prefers-color-scheme do navegador.
+ *
+ * A classe `dark` do <html> é SÓ deste script e do `apply()` do cliente; o
+ * React não renderiza `className` no <html>. Se renderizasse, cada refresh()
+ * de Server Action re-renderizaria a raiz e reescreveria o atributo `class`
+ * com o valor que o servidor conhece — apagando o `dark` que veio do sistema
+ * (tema "Sistema" com o SO escuro ficava claro depois de qualquer ação).
  */
 function themeScript(appearance: Appearance): string {
-    return `(function(){try{if(${JSON.stringify(appearance)}==='system'){document.documentElement.classList.toggle('dark',window.matchMedia('(prefers-color-scheme: dark)').matches)}}catch(e){}})();`;
+    return `(function(){try{var a=${JSON.stringify(appearance)};document.documentElement.classList.toggle('dark',a==='dark'||(a==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches))}catch(e){}})();`;
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
@@ -47,16 +53,19 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     const user = await currentUser();
 
     return (
-        <html
-            lang="pt-BR"
-            className={cn(instrumentSans.variable, appearance === 'dark' && 'dark')}
-            suppressHydrationWarning
-        >
+        // Sem className no <html> de propósito (ver themeScript). O
+        // suppressHydrationWarning cobre a classe que o script põe antes da
+        // hidratação.
+        <html lang="pt-BR" suppressHydrationWarning>
             <head>
                 <script dangerouslySetInnerHTML={{ __html: themeScript(appearance) }} />
                 <style>{`html{background-color:oklch(98.5% 0.004 285)}html.dark{background-color:oklch(16% 0.02 265)}`}</style>
             </head>
-            <body className="font-sans antialiased">
+            {/* A variável da fonte mora no <body> pelo mesmo motivo. Funciona
+                porque o `font-sans` do globals.css está num `@theme inline`:
+                o utilitário carrega `var(--font-instrument-sans)` cru e o
+                resolve no próprio elemento, não no :root. */}
+            <body className={cn(instrumentSans.variable, 'font-sans antialiased')}>
                 <Providers user={user ? authUserResource(user) : null}>{children}</Providers>
             </body>
         </html>

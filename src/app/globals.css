@@ -1,6 +1,7 @@
 @import 'tailwindcss';
 
-/* Tema escuro por classe no <html>, controlado por src/hooks/use-appearance.ts */
+/* Tema escuro por classe no <html>: posta antes do primeiro paint pelo script
+   inline de src/app/layout.tsx e mantida por src/hooks/use-appearance.ts. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ---------------------------------------------------------------------------
@@ -65,6 +66,9 @@
     --shadow-float: 0 12px 44px oklch(0% 0 0 / 0.55), 0 2px 8px oklch(0% 0 0 / 0.4);
 }
 
+/* O `inline` é o que faz a fonte funcionar: a variável --font-instrument-sans
+   (next/font) mora no <body>, não no <html> (ver layout.tsx), e o utilitário
+   `font-sans` precisa carregá-la crua para resolvê-la no próprio elemento. */
 @theme inline {
     --font-sans: var(--font-instrument-sans), 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';

@@ -17,6 +17,7 @@ import {
 import { abortIf, abortUnless, invalid } from '@/server/errors';
 import { authorizeBoard } from '@/server/policies/board';
 import { logActivity } from '@/server/services/activity';
+import { MAX_ID } from '@/server/validation';
 
 /**
  * Os cards: criar, editar, mover, etiquetar, atribuir, arquivar e restaurar —
@@ -29,9 +30,6 @@ import { logActivity } from '@/server/services/activity';
  */
 
 type Actor = Pick<UserRow, 'id'>;
-
-/** O maior id possível (as chaves são `integer` do Postgres). */
-const MAX_ID = 2_147_483_647;
 
 /** O card pelo id, ou 404 — o route model binding do Laravel. */
 export async function cardOrFail(cardId: number, executor: Executor = db): Promise<CardRow> {
@@ -209,13 +207,14 @@ export async function moveCard(
     const crossed = completionCrossing(fromList ?? null, toList);
 
     // A ordem final, id → posição. Se um id vier repetido, vale a última
-    // aparição (era o efeito do laço que gravava um por um). Id fora do
-    // intervalo de um `integer` não existe — e derrubaria a consulta em vez de
-    // ser ignorado como os outros forjados.
+    // aparição (era o efeito do laço que gravava um por um) — e colapsar aqui
+    // impede que os repetidos multipliquem o trabalho do banco. Id que não é
+    // inteiro ou fica fora do intervalo de um `integer` não existe, e
+    // derrubaria a consulta em vez de ser ignorado como os outros forjados.
     const order = new Map<number, number>();
 
     input.ordered_ids.forEach((id, index) => {
-        if (id > 0 && id <= MAX_ID) order.set(id, index + 1);
+        if (Number.isInteger(id) && id > 0 && id <= MAX_ID) order.set(id, index + 1);
     });
 
     await db.transaction(async (tx) => {
@@ -233,6 +232,7 @@ export async function moveCard(
 
         // Um UPDATE só, em vez de um por card: o filtro por lista é a
         // interseção com quem realmente está lá (já contando o card movido).
+        // O `else` só deixa o CASE total — nenhuma linha fica sem posição.
         const positions = sql.join(
             [...order].map(([id, position]) => sql`when ${id}::integer then ${position}::double precision`),
             sql` `,
@@ -240,7 +240,7 @@ export async function moveCard(
 
         await tx
             .update(cards)
-            .set({ position: sql`case ${cards.id} ${positions} end` })
+            .set({ position: sql`case ${cards.id} ${positions} else ${cards.position} end` })
             .where(and(eq(cards.boardListId, toList.id), inArray(cards.id, [...order.keys()])));
     });
 

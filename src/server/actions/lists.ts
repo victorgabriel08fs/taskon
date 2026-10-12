@@ -14,6 +14,13 @@ import { id, messages, requiredString, z } from '@/server/validation';
 const CARD_LIMIT_MESSAGE = 'Use um número inteiro de 1 a 999.';
 const INVALID_ID = 'Identificador inválido.';
 
+/**
+ * Teto da ordem enviada depois de um arraste — nenhum quadro de verdade chega
+ * perto. Sem ele, um pedido forjado com milhares de ids (repetidos, até)
+ * custaria ao banco a cada envio.
+ */
+const MAX_ORDERED_IDS = 1000;
+
 /** Nova coluna no fim do quadro. */
 export const createList = defineAction(
     z.object({ boardId: id(), title: requiredString(120) }),
@@ -63,7 +70,10 @@ export const reorderLists = defineAction(
         boardId: id(),
         ordered_ids: z
             .array(z.number({ error: INVALID_ID }).int({ error: INVALID_ID }), { error: messages.required })
-            .min(1, { error: messages.required }),
+            .min(1, { error: messages.required })
+            .max(MAX_ORDERED_IDS, {
+                error: `Este quadro tem colunas demais para reordenar (máximo de ${MAX_ORDERED_IDS}).`,
+            }),
     }),
     async ({ boardId, ordered_ids }, { user }) => {
         await listService.reorderLists(user, boardId, ordered_ids);

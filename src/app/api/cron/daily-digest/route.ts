@@ -12,7 +12,8 @@ import { runDailyDigest } from '@/server/services/daily-digest';
  * Para testar na mão (com o mesmo `Authorization` do cron):
  *
  *   ?dry-run=1          mostra quem receberia, sem enviar nada
- *   ?user=12            só esta pessoa (id ou e-mail)
+ *   ?user=12            só esta pessoa (id ou e-mail); `?user=` vazio não
+ *                       casa com ninguém
  *   ?force=1            ignora o opt-out, o "já recebeu hoje" e o resumo vazio
  *
  * Responde 500 quando algum envio falhou — o mesmo "exit code 1" do comando —,
@@ -32,6 +33,10 @@ export async function GET(request: Request): Promise<Response> {
     try {
         const result = await runDailyDigest({
             now: new Date(),
+            // Cru, de propósito: `null` (sem `?user`) é todo mundo, e `''`
+            // (`?user=`) é um filtro que não casa com ninguém. Um `|| null`
+            // aqui transformaria o `?user=&force=1` incompleto num disparo
+            // para a base inteira, opt-out incluído.
             user: params.get('user'),
             force: queryFlag(params.get('force')),
             dryRun,

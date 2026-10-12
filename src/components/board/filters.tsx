@@ -61,21 +61,26 @@ export function FilterPopover({
     const searchId = useId();
 
     return (
+        // Em tela estreita o gatilho fica só com o ícone (abaixo de `md`) e o
+        // painel de 20rem, que ancorado à direita do botão sairia da tela pela
+        // esquerda, ocupa a largura (abaixo de `sm`) — como o do pomodoro.
         <Popover
             align="right"
-            className="w-80"
+            className="w-80 max-sm:fixed max-sm:inset-x-3 max-sm:w-auto"
             trigger={({ toggle: openToggle }) => (
                 <button
                     type="button"
                     onClick={openToggle}
+                    aria-label="Filtros"
                     className={cn(
                         'inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-medium transition-all duration-150',
                         'bg-white/15 text-white ring-1 ring-white/20 hover:bg-white/25 active:scale-95',
+                        'max-md:gap-1 max-md:px-2.5',
                         active > 0 && 'bg-white/90 text-violet-700 ring-white',
                     )}
                 >
                     <Filter className="size-4" />
-                    Filtros
+                    <span className="hidden md:inline">Filtros</span>
                     {active > 0 && (
                         <span className="rounded-full bg-violet-600 px-1.5 text-[10px] font-bold text-white">
                             {active}

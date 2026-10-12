@@ -571,10 +571,18 @@ export function digestText(digest: TaskDigest): string {
     return lines.join('\n');
 }
 
-/** O e-mail pronto para o `sendMail`, endereçado a quem o resumo descreve. */
+/**
+ * O e-mail pronto para o `sendMail`, endereçado a quem o resumo descreve —
+ * o envio do cron e o de teste passam os dois por aqui.
+ *
+ * Com o nome de exibição, como o `Mail::to($user)` do Laravel: a caixa de
+ * entrada mostra "Ana Souza", não só o endereço. O mailer monta o "Nome
+ * <email>" com `formatAddress`, que põe aspas e escapa o que precisa.
+ */
 export function digestMessage(digest: TaskDigest): MailMessage {
     return {
         to: digest.user.email,
+        toName: digest.user.name,
         subject: digestSubject(digest),
         html: digestHtml(digest),
         text: digestText(digest),

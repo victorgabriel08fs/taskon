@@ -7,6 +7,11 @@
  *
  * Toda data é `timestamptz`: o instante é guardado sem ambiguidade e o fuso do
  * app (`APP_TIMEZONE`) só entra na hora de decidir "hoje" ou formatar.
+ *
+ * Toda chave estrangeira começa algum índice. O InnoDB criava um sozinho para
+ * cada FK; o Postgres não, e sem ele apagar o registro pai (o ON DELETE
+ * CASCADE / SET NULL) varre a tabela filha inteira atrás de quem aponta para
+ * ele. Quando um índice composto já começa pela coluna, ele basta.
  */
 import { relations } from 'drizzle-orm';
 import {
@@ -171,7 +176,8 @@ export const boardLists = pgTable(
             .references(() => boards.id, { onDelete: 'cascade' }),
         title: varchar('title', { length: 255 }).notNull(),
 
-        // Ordenação fracionária: mover = média entre vizinhos, sem reescrever a lista toda.
+        // Ordem da coluna no quadro. O cliente manda a ordem final inteira a cada
+        // arraste e o servidor regrava todas as posições (índice + 1) num UPDATE só.
         position: doublePrecision('position').notNull().default(0),
         cardLimit: smallint('card_limit'),
 
@@ -212,6 +218,9 @@ export const cards = pgTable(
 
         // A varredura dos concluídos filtra por (board_id, archived_at, completed_at).
         index('cards_archive_sweep_index').on(table.boardId, table.archivedAt, table.completedAt),
+
+        // Apagar uma conta anula o created_by dos cards dela (SET NULL).
+        index('cards_created_by_index').on(table.createdBy),
     ],
 );
 
@@ -240,7 +249,12 @@ export const cardLabel = pgTable(
             .notNull()
             .references(() => labels.id, { onDelete: 'cascade' }),
     },
-    (table) => [uniqueIndex('card_label_card_id_label_id_unique').on(table.cardId, table.labelId)],
+    (table) => [
+        uniqueIndex('card_label_card_id_label_id_unique').on(table.cardId, table.labelId),
+
+        // O único acima começa por card_id; apagar uma etiqueta procura por label_id.
+        index('card_label_label_id_index').on(table.labelId),
+    ],
 );
 
 export const cardUser = pgTable(
@@ -273,7 +287,12 @@ export const comments = pgTable(
         body: text('body').notNull(),
         ...timestamps,
     },
-    (table) => [index('comments_card_id_created_at_index').on(table.cardId, table.createdAt)],
+    (table) => [
+        index('comments_card_id_created_at_index').on(table.cardId, table.createdAt),
+
+        // Apagar uma conta leva os comentários dela junto (CASCADE).
+        index('comments_user_id_index').on(table.userId),
+    ],
 );
 
 export const checklists = pgTable(
@@ -325,6 +344,10 @@ export const activities = pgTable(
     (table) => [
         index('activities_board_id_created_at_index').on(table.boardId, table.createdAt),
         index('activities_card_id_created_at_index').on(table.cardId, table.createdAt),
+
+        // Apagar uma conta anula o autor do histórico dela (SET NULL). O
+        // histórico não tem faxina, só cresce: varrê-lo inteiro custa cada vez mais.
+        index('activities_user_id_index').on(table.userId),
     ],
 );
 

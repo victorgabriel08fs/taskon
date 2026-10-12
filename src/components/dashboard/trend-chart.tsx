@@ -73,7 +73,10 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
     }, [points]);
 
     const current = active !== null ? points[active] : null;
-    // Rótulo preso longe das bordas para o balão não vazar do cartão.
+    // Rótulo preso longe das bordas para o balão não vazar do cartão. No
+    // celular 9% do gráfico é menos que meio balão (ele vazava da tela), então
+    // a posição também tem um piso de 2,75rem de cada lado; de `sm` para cima
+    // os 9% já passam disso e nada muda.
     const tooltipLeft = active !== null ? Math.min(Math.max((active / (points.length - 1)) * 100, 9), 91) : 0;
 
     return (
@@ -215,7 +218,7 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.14 }}
-                            style={{ left: `${tooltipLeft}%` }}
+                            style={{ left: `clamp(2.75rem, ${tooltipLeft}%, calc(100% - 2.75rem))` }}
                             className="pointer-events-none absolute top-0 -translate-x-1/2 rounded-lg bg-foreground px-2.5 py-1.5 text-background shadow-lg"
                         >
                             <p className="text-[11px] font-semibold capitalize">

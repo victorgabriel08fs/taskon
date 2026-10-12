@@ -23,16 +23,6 @@ export function counted(): SQL {
     return or(isNull(cards.archivedAt), isNotNull(cards.completedAt))!;
 }
 
-/** O usuário participa do quadro do card (existe linha em board_user). */
-export function memberOfCardBoard(userId: number): SQL {
-    return exists(
-        db
-            .select({ one: sql`1` })
-            .from(boardUser)
-            .where(and(eq(boardUser.boardId, cards.boardId), eq(boardUser.userId, userId))),
-    );
-}
-
 /**
  * `Card::scopeAssignedTo` — cards atribuídos ao usuário, em quadros vivos de
  * que ele ainda participa.

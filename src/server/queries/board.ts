@@ -23,6 +23,7 @@ import { abortUnless } from '@/server/errors';
 import { authorizeBoard, boardCan } from '@/server/policies/board';
 import { activityResource, labelResource, userResource } from '@/server/resources/common';
 import { boardListResource, boardResource, cardResource } from '@/server/resources/board';
+import { MAX_ID } from '@/server/validation';
 
 /**
  * A tela do quadro — o antigo `BoardController@show` (sem o card aberto, a
@@ -53,9 +54,6 @@ export interface BoardMembership {
     isFavorite: boolean;
     user: Pick<UserRow, 'id' | 'name' | 'email' | 'avatarColor' | 'title'>;
 }
-
-/** O maior valor de uma coluna `integer` do Postgres. */
-const MAX_ID = 2_147_483_647;
 
 /**
  * Id vindo da URL que nem pode existir (NaN, fracionário, fora do `integer`)
@@ -193,8 +191,8 @@ export async function loadBoardPage(user: Pick<UserRow, 'id'>, boardId: number):
             .where(liveCards)
             .orderBy(asc(cardUser.id)),
 
-        // Só o número: é ele que decide se o menu do quadro mostra a gaveta de
-        // arquivados, e a lista em si só é lida quando alguém a abre.
+        // Só o número — o selo da entrada "Arquivados" no menu do quadro; a
+        // lista em si só é lida quando alguém abre a gaveta.
         db.$count(cards, and(eq(cards.boardId, board.id), isNotNull(cards.archivedAt))),
     ]);
 

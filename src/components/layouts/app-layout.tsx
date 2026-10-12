@@ -68,7 +68,15 @@ export function AppLayout({ children, overlay = false, headerSlot, className }: 
                         monta este layout de novo. */}
                     {user && <PomodoroWidget userId={user.id} overlay={overlay} />}
 
-                    <ThemeToggle className={cn(overlay && 'bg-white/12 ring-white/20')} />
+                    {/* Em tela estreita o seletor sai — abaixo de `sm` em todo o
+                        app e, no quadro, cujo cabeçalho é bem mais disputado,
+                        abaixo de `lg`: ali ele ficava por cima das ações do quadro
+                        (tocar no "…" ligava o tema escuro). O tema continua em
+                        Configurações › Aparência, pelo item "Preferências" do
+                        menu da conta. */}
+                    <ThemeToggle
+                        className={overlay ? 'hidden bg-white/12 ring-white/20 lg:inline-flex' : 'hidden sm:inline-flex'}
+                    />
 
                     {user && (
                         <Popover

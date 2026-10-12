@@ -23,6 +23,13 @@ const nullableColor = z.preprocess(
     z.enum(COLORS, { error: messages.in }).nullable(),
 );
 
+/**
+ * Teto da ordem enviada depois de um arraste — nenhuma coluna de verdade
+ * chega perto. Sem ele, um pedido forjado com milhares de ids (repetidos,
+ * até) custaria ao banco a cada envio.
+ */
+const MAX_ORDERED_IDS = 1000;
+
 /** Entra no fim da lista; quem cria já vira responsável. */
 export const createCard = defineAction(
     z.object({ listId: id(), title: requiredString(500) }),
@@ -68,7 +75,10 @@ export const moveCard = defineAction(
             .array(z.number({ error: 'Use só números inteiros.' }).int({ error: 'Use só números inteiros.' }), {
                 error: messages.required,
             })
-            .min(1, { error: messages.required }),
+            .min(1, { error: messages.required })
+            .max(MAX_ORDERED_IDS, {
+                error: `Esta coluna tem cards demais para reordenar (máximo de ${MAX_ORDERED_IDS}).`,
+            }),
     }),
     async ({ cardId, ...input }, { user }) => {
         await cardService.moveCard(user, cardId, input);

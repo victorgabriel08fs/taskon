@@ -32,10 +32,12 @@ export function BoardCard({ board, index }: { board: BoardSummary; index: number
                         aria-label={board.is_favorite ? 'Remover dos favoritos' : 'Marcar como favorito'}
                         onClick={(event) => {
                             // A estrela mora dentro do link do quadro: sem isto
-                            // o clique também abriria o quadro.
+                            // o clique também abriria o quadro. (A barra de
+                            // navegação também a ignora — ver NESTED_CONTROLS em
+                            // navigation-progress.tsx; a que aparece é a da action.)
                             event.preventDefault();
                             event.stopPropagation();
-                            void runAction(toggleFavorite({ boardId: board.id }));
+                            void runAction(() => toggleFavorite({ boardId: board.id }));
                         }}
                         className={cn(
                             'absolute right-2.5 top-2.5 rounded-lg p-1.5 backdrop-blur transition-all duration-200',

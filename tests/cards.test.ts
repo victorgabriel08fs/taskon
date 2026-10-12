@@ -172,6 +172,20 @@ describe('cards', () => {
         expect(await activityTypes(mine.id)).toEqual([]);
     });
 
+    it('id repetido vale pela última aparição; id fracionário é ignorado', async () => {
+        const first = await createCard(doing, { position: 1 });
+        const second = await createCard(doing, { position: 2 });
+        const moved = await createCard(todo, { position: 1 });
+
+        await cardService.moveCard(user, moved.id, {
+            board_list_id: doing.id,
+            ordered_ids: [first.id, moved.id, second.id, first.id, 1.5],
+        });
+
+        expect(await cardIdsIn(doing)).toEqual([moved.id, second.id, first.id]);
+        expect((await fresh(first))?.position).toBe(4);
+    });
+
     it('não move para uma lista de outro quadro', async () => {
         const foreignList = await createList(await createBoard(await createUser()));
         const card = await createCard(todo, { position: 1 });

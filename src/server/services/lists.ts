@@ -1,19 +1,17 @@
 import 'server-only';
 
-import { and, eq, inArray, isNull, max } from 'drizzle-orm';
+import { and, eq, inArray, isNull, max, sql } from 'drizzle-orm';
 import { db } from '@/server/db';
 import { boardLists, cards, type BoardListRow, type UserRow } from '@/server/db/schema';
 import { abort } from '@/server/errors';
 import { authorizeBoard } from '@/server/policies/board';
 import { logActivity } from '@/server/services/activity';
+import { MAX_ID } from '@/server/validation';
 
 /**
  * Listas (colunas) — o antigo `BoardListController`. Mexer em coluna é mexer
  * no conteúdo do quadro: qualquer membro pode (`update`).
  */
-
-/** O maior valor de uma coluna `integer` do Postgres. */
-const MAX_ID = 2_147_483_647;
 
 /** Id que pode existir no banco; o resto nem vale a consulta. */
 const isRowId = (value: number) => Number.isInteger(value) && value > 0 && value <= MAX_ID;
@@ -118,27 +116,28 @@ export async function deleteList(actor: Pick<UserRow, 'id'>, listId: number): Pr
 export async function reorderLists(actor: Pick<UserRow, 'id'>, boardId: number, orderedIds: number[]): Promise<void> {
     const { board } = await authorizeBoard(actor, boardId, 'update');
 
-    const candidates = [...new Set(orderedIds.filter(isRowId))];
+    // A ordem final, id → posição. Id repetido vale pela ÚLTIMA aparição: era
+    // o efeito do foreach do legado, que gravava uma vez por aparição. Colapsar
+    // antes de ir ao banco também tira dos repetidos o poder de multiplicar o
+    // trabalho dele.
+    const order = new Map<number, number>();
 
-    if (candidates.length === 0) return;
-
-    const owned = await db
-        .select({ id: boardLists.id })
-        .from(boardLists)
-        .where(and(eq(boardLists.boardId, board.id), inArray(boardLists.id, candidates)));
-
-    const allowed = new Set(owned.map((row) => row.id));
-
-    if (allowed.size === 0) return;
-
-    await db.transaction(async (tx) => {
-        for (const [index, id] of orderedIds.entries()) {
-            if (!allowed.has(id)) continue;
-
-            await tx
-                .update(boardLists)
-                .set({ position: index + 1 })
-                .where(and(eq(boardLists.id, id), eq(boardLists.boardId, board.id)));
-        }
+    orderedIds.forEach((id, index) => {
+        if (isRowId(id)) order.set(id, index + 1);
     });
+
+    if (order.size === 0) return;
+
+    const positions = sql.join(
+        [...order].map(([id, position]) => sql`when ${id}::integer then ${position}::double precision`),
+        sql` `,
+    );
+
+    // Um UPDATE só, em vez de um por coluna — e atômico por si: grava todas as
+    // posições ou nenhuma, como a transação do laço antigo. O filtro pelo
+    // quadro é o que ignora as listas alheias; o `else` só deixa o CASE total.
+    await db
+        .update(boardLists)
+        .set({ position: sql`case ${boardLists.id} ${positions} else ${boardLists.position} end` })
+        .where(and(eq(boardLists.boardId, board.id), inArray(boardLists.id, [...order.keys()])));
 }

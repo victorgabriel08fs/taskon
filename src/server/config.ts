@@ -6,9 +6,9 @@ import type { AvatarColor, BoardBackground, ColorKey } from '@/types';
  * O antigo `config/taskon.php` + o pedaço de `config/app.php` que importa.
  *
  * As listas daqui são a fonte da verdade da validação no servidor. O visual
- * correspondente mora em `src/app/globals.css` (classes .board-bg-* e
- * .swatch-*), porque o Tailwind precisa das classes escritas literalmente no
- * código para gerá-las.
+ * correspondente mora em `src/app/globals.css` (classes .board-bg-*) e em
+ * `src/lib/palette.ts` (mapa chave → classes), porque o Tailwind precisa das
+ * classes escritas literalmente no código para gerá-las.
  */
 
 const env = (key: string): string | undefined => {
@@ -17,7 +17,7 @@ const env = (key: string): string | undefined => {
     return value === undefined || value === '' ? undefined : value;
 };
 
-/** "07:00" → { hour: 7, minute: 0 }. Formato inválido cai no padrão. */
+/** Horário "HH:MM" válido, ou o padrão quando o valor não é um horário. */
 function clock(value: string | undefined, fallback: string): string {
     return value && /^([01]\d|2[0-3]):[0-5]\d$/.test(value) ? value : fallback;
 }

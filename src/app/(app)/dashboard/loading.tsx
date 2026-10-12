@@ -25,7 +25,7 @@ export default function DashboardLoading() {
                     ))}
                 </div>
 
-                <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_22rem]">
+                <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_24rem]">
                     <div className="h-72 animate-pulse rounded-xl bg-surface ring-1 ring-border" />
                     <div className="h-72 animate-pulse rounded-xl bg-surface ring-1 ring-border" />
                 </div>

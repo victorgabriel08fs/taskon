@@ -24,6 +24,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ActiveCardContext } from '@/components/board/active-card';
 import { ActivityPanel } from '@/components/board/activity-panel';
+import { useComposer } from '@/components/board/add-card';
 import { ArchivedModal } from '@/components/board/archived-modal';
 import { BoardHeader } from '@/components/board/board-header';
 import { CardItem, type CardDragData } from '@/components/board/card-item';
@@ -173,8 +174,11 @@ export function BoardShow({ board, backgrounds, colors, autoArchive, activity, c
      * mostraria uma ordem que não foi salva.
      */
     const persist = useCallback(
-        <T,>(call: Promise<ActionResult<T>>) => {
+        <T,>(call: () => Promise<ActionResult<T>>) => {
             void runAction(call, {
+                // O `showProgress: false` do legado: o card já está onde a
+                // pessoa soltou, e uma barra correndo sugeriria que não.
+                progress: false,
                 // O 422 vem sem toast (ele é para formulários), e o arraste não
                 // tem campo onde mostrar o erro: a mensagem vira o aviso.
                 onError: (result) => {
@@ -308,7 +312,7 @@ export function BoardShow({ board, backgrounds, colors, autoArchive, activity, c
             const next = arrayMove(lists, oldIndex, newIndex);
 
             setLists(next);
-            persist(reorderLists({ boardId: board.id, ordered_ids: next.map((list) => list.id) }));
+            persist(() => reorderLists({ boardId: board.id, ordered_ids: next.map((list) => list.id) }));
 
             return;
         }
@@ -346,23 +350,29 @@ export function BoardShow({ board, backgrounds, colors, autoArchive, activity, c
 
         const ordered = next.find((list) => list.id === targetListId)?.cards.map((card) => card.id) ?? [];
 
-        persist(moveCard({ cardId: active.cardId, board_list_id: targetListId, ordered_ids: ordered }));
+        persist(() => moveCard({ cardId: active.cardId, board_list_id: targetListId, ordered_ids: ordered }));
     };
 
     // O card aberto é uma rota, não um estado: F5 reabre, Voltar fecha, o link
     // é compartilhável. `scroll: false` é o `preserveScroll` do Inertia.
     const openCard = useCallback(
         (card: Card) => {
-            startNavigationProgress();
-            router.push(`/boards/${board.id}/cards/${card.id}`, { scroll: false });
+            const href = `/boards/${board.id}/cards/${card.id}`;
+
+            startNavigationProgress(href);
+            router.push(href, { scroll: false });
         },
         [router, board.id],
     );
 
     const closeCard = useCallback(() => {
-        startNavigationProgress();
-        router.push(`/boards/${board.id}`, { scroll: false });
+        const href = `/boards/${board.id}`;
+
+        startNavigationProgress(href);
+        router.push(href, { scroll: false });
     }, [router, board.id]);
+
+    const closeActivity = useCallback(() => setShowActivity(false), []);
 
     const visibleCards = useMemo(() => {
         const map = new Map<number, Card[]>();
@@ -416,9 +426,10 @@ export function BoardShow({ board, backgrounds, colors, autoArchive, activity, c
 
     // Esc sai do modo seleção, mas não enquanto um diálogo está aberto por
     // cima (a exportação, o card, a gaveta, uma confirmação): lá o Esc é do
-    // diálogo, e sair dos dois de uma vez perderia a seleção sem querer.
+    // diálogo, e sair dos dois de uma vez perderia a seleção sem querer. O
+    // mesmo vale para o painel de atividade: aberto, o Esc fecha só ele.
     useEffect(() => {
-        if (!selectMode) return;
+        if (!selectMode || showActivity) return;
 
         const onKey = (event: KeyboardEvent) => {
             // defaultPrevented: o Esc já fechou um popover (filtros, membros…).
@@ -432,7 +443,7 @@ export function BoardShow({ board, backgrounds, colors, autoArchive, activity, c
         document.addEventListener('keydown', onKey);
 
         return () => document.removeEventListener('keydown', onKey);
-    }, [selectMode]);
+    }, [selectMode, showActivity]);
 
     return (
         <ActiveCardContext value={setActiveCard}>
@@ -454,7 +465,7 @@ export function BoardShow({ board, backgrounds, colors, autoArchive, activity, c
                                 description: 'Todas as listas, cards e comentários vão junto. Não dá para desfazer.',
                                 confirmLabel: 'Excluir quadro',
                                 // A action redireciona para /boards com o aviso.
-                                onConfirm: () => void runAction(deleteBoard({ boardId: board.id })),
+                                onConfirm: () => void runAction(() => deleteBoard({ boardId: board.id })),
                             })
                         }
                     />
@@ -496,7 +507,7 @@ export function BoardShow({ board, backgrounds, colors, autoArchive, activity, c
                                             title: `Excluir "${target.title}"?`,
                                             description: 'Os cards dessa lista também serão removidos.',
                                             confirmLabel: 'Excluir lista',
-                                            onConfirm: () => void runAction(deleteList({ listId: target.id })),
+                                            onConfirm: () => void runAction(() => deleteList({ listId: target.id })),
                                         })
                                     }
                                 />
@@ -552,7 +563,7 @@ export function BoardShow({ board, backgrounds, colors, autoArchive, activity, c
                     onClose={() => setArchivedOpen(false)}
                 />
 
-                <ActivityPanel open={showActivity} onClose={() => setShowActivity(false)} activity={activity} />
+                <ActivityPanel open={showActivity} onClose={closeActivity} activity={activity} />
 
                 {dialog}
 
@@ -691,26 +702,10 @@ function SelectionBar({
 
 function AddList({ boardId }: { boardId: number }) {
     const [open, setOpen] = useState(false);
-    const [title, setTitle] = useState('');
 
-    // Dois Enter seguidos chegam antes da resposta: sem a trava, a mesma
-    // lista seria criada duas vezes.
-    const inFlight = useRef(false);
-
-    const submit = () => {
-        const value = title.trim();
-
-        if (!value || inFlight.current) return;
-
-        inFlight.current = true;
-
-        void runAction(createList({ boardId, title: value }), {
-            onSuccess: () => setTitle(''),
-            onFinish: () => {
-                inFlight.current = false;
-            },
-        });
-    };
+    // Enter cria e já libera o campo para a próxima lista, mesmo com a
+    // anterior ainda a caminho (ver useComposer).
+    const { title, setTitle, submit } = useComposer((value) => createList({ boardId, title: value }));
 
     const close = () => {
         setOpen(false);

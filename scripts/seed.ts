@@ -91,11 +91,16 @@ export async function seedDatabase(now = new Date()): Promise<void> {
             })
             .returning();
 
-        const launch = await buildDemoBoard(victor, 'Lançamento do Taskon', tx);
+        // Ninguém está logado num seed: o "criou o quadro" de cada quadro sai
+        // como "Sistema" no feed — no legado, o `Auth::id()` do ActivityLogger
+        // era null aqui.
+        const bySystem = { actorId: null };
+
+        const launch = await buildDemoBoard(victor, 'Lançamento do Taskon', tx, bySystem);
 
         await tx.insert(boardUser).values({ boardId: launch.id, userId: ana.id, role: 'admin' });
 
-        await buildDemoBoard(victor, 'Pessoal', tx);
+        await buildDemoBoard(victor, 'Pessoal', tx, bySystem);
 
         await paintHistory(tx, launch, victor, ana, now);
     });
@@ -110,6 +115,9 @@ export async function seedDatabase(now = new Date()): Promise<void> {
  *
  * As datas são fixas de propósito — seed com sorteio dá um painel diferente
  * a cada `npm run db:fresh`, e aí não dá para comparar nada.
+ *
+ * Como no legado, estes cards entram direto no banco, sem atividade no feed:
+ * o histórico é do painel, não de alguém que tenha mexido no quadro.
  */
 async function paintHistory(tx: Transaction, board: BoardRow, victor: UserRow, ana: UserRow, now: Date): Promise<void> {
     const lists = await tx

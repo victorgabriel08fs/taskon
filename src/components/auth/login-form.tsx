@@ -2,10 +2,14 @@
 
 import { LogIn } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/input';
 import { useActionForm } from '@/lib/actions';
 import { login } from '@/server/actions/auth';
+
+/** Mesmo nome de src/server/flash.ts (não dá para importar módulo de servidor aqui). */
+const STATUS_COOKIE = 'taskon_status';
 
 /**
  * A tela existe para isto: o foco já vai para o e-mail, no commit, como o
@@ -17,12 +21,30 @@ const focusOnMount = (node: HTMLInputElement | null) => node?.focus();
 /**
  * `next` é o caminho que a pessoa tentou abrir antes de cair no login (o
  * `?next=` que o proxy anota). A action confere de novo se ele é interno.
+ *
+ * `status` é a confirmação deixada por outra tela (hoje, a redefinição de
+ * senha) — o antigo `session('status')`.
  */
-export function LoginForm({ next }: { next: string | null }) {
+export function LoginForm({ next, status }: { next: string | null; status: string | null }) {
     const form = useActionForm({ email: '', password: '', remember: false, next }, login);
+
+    // Já está na tela: apaga o cookie para o aviso não voltar no F5 nem na
+    // próxima visita — o flash da sessão do Laravel, que valia uma requisição.
+    useEffect(() => {
+        if (status) document.cookie = `${STATUS_COOKIE}=; Max-Age=0; path=/; SameSite=Lax`;
+    }, [status]);
 
     return (
         <>
+            {status && (
+                <div
+                    role="status"
+                    className="mb-5 animate-pop rounded-lg bg-success/12 px-3.5 py-2.5 text-sm font-medium text-success"
+                >
+                    {status}
+                </div>
+            )}
+
             <form
                 onSubmit={(event) => {
                     event.preventDefault();

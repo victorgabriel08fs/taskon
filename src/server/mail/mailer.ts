@@ -19,7 +19,18 @@ import { config } from '@/server/config';
  * para o e-mail da própria conta — qualquer outro par devolve 403.
  */
 export interface MailMessage {
+    /**
+     * Só o endereço de quem recebe. É por ele que se confere o destinatário
+     * (o `hasTo($email)` do Laravel vira `sentMail[0].to === email`).
+     */
     to: string;
+    /**
+     * O nome de exibição de quem recebe: o `Mail::to($user)` do Laravel
+     * mandava "Nome <email>". Os drivers que entregam de verdade (smtp,
+     * resend) montam o endereço com `formatAddress`; sem nome, vai só o
+     * e-mail.
+     */
+    toName?: string | null;
     subject: string;
     html: string;
     text?: string;
@@ -48,8 +59,45 @@ export function fromAddress(): string {
     return `${name} <${address}>`;
 }
 
+/**
+ * O nome que pode ir solto, sem aspas: só "atoms" do RFC 5322 (letras e
+ * dígitos ASCII, os símbolos de `atext`) e espaços.
+ */
+const PLAIN_PHRASE = /^[A-Za-z0-9!#$%&'*+\-/=?^_`{|}~ ]+$/;
+
+/**
+ * "Nome <email>" seguro (RFC 5322) para o cabeçalho de destinatário.
+ *
+ * O nome vem de gente, então é tratado como texto hostil:
+ *
+ *  - quebras de linha e outros caracteres de controle viram espaço — um
+ *    "\r\n" no nome seria injeção de cabeçalho;
+ *  - nome que não seja só letras ASCII, dígitos, espaços e os símbolos de
+ *    `atext` vai como quoted-string, com `\` e `"` escapados. Sem as aspas,
+ *    vírgula separaria destinatários, ponto quebraria os parsers estritos, e
+ *    um nome como "Ana <outro@dominio.com>" DESVIARIA o e-mail: o parser do
+ *    nodemailer entrega no primeiro `<…>` que encontra;
+ *  - acentos também vão entre aspas, a forma que o legado mandava ao Resend
+ *    (o `Address::toString()` do Symfony põe todo nome entre aspas). Quem
+ *    monta o cabeçalho de verdade (nodemailer, Resend) os codifica no
+ *    RFC 2047;
+ *  - sem nome (ou só espaços), só o e-mail.
+ */
+export function formatAddress(name: string | null | undefined, email: string): string {
+    const address = email.trim();
+    const display = (name ?? '').replace(/[\p{Cc}\s]+/gu, ' ').trim();
+
+    if (display === '') return address;
+
+    const phrase = PLAIN_PHRASE.test(display) ? display : `"${display.replace(/[\\"]/g, '\\$&')}"`;
+
+    return `${phrase} <${address}>`;
+}
+
 /** Envia ou lança — quem chama decide se a falha derruba a operação. */
 export async function sendMail(message: MailMessage): Promise<void> {
+    const recipient = formatAddress(message.toName, message.to);
+
     switch (mailerName()) {
         case 'array':
             sentMail.push(message);
@@ -57,19 +105,17 @@ export async function sendMail(message: MailMessage): Promise<void> {
             return;
 
         case 'log':
-            // Em produção o corpo NÃO vai para o log: ele pode carregar um link
-            // de redefinição de senha, e log de deploy é lido por mais gente
-            // que a dona da conta. Lá o certo é configurar o Resend.
-            if (process.env.VERCEL_ENV === 'production') {
-                console.warn(
-                    `[mail:log] e-mail para ${message.to} ("${message.subject}") NÃO foi enviado: configure RESEND_API_KEY.`,
-                );
-
-                return;
+            // Na Vercel (produção ou preview) o `log` é falha, não entrega: o
+            // corpo pode carregar um link de redefinição de senha, que não
+            // pode parar no log do deploy; e fingir que enviou faria o resumo
+            // carimbar todo mundo como "recebeu hoje" e o "Esqueci a senha"
+            // anunciar um link que nunca saiu. Lançar deixa a falha à vista.
+            if (process.env.VERCEL) {
+                throw new Error('E-mail não configurado neste deploy: defina RESEND_API_KEY (ou MAIL_MAILER=smtp).');
             }
 
             console.info(
-                `[mail:log] para ${message.to} · ${message.subject}\n${message.text ?? message.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 2000)}`,
+                `[mail:log] para ${recipient} · ${message.subject}\n${message.text ?? message.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 2000)}`,
             );
 
             return;
@@ -87,7 +133,7 @@ export async function sendMail(message: MailMessage): Promise<void> {
 
             await transport.sendMail({
                 from: fromAddress(),
-                to: message.to,
+                to: recipient,
                 subject: message.subject,
                 html: message.html,
                 text: message.text,
@@ -105,7 +151,7 @@ export async function sendMail(message: MailMessage): Promise<void> {
             const { Resend } = await import('resend');
             const { error } = await new Resend(apiKey).emails.send({
                 from: fromAddress(),
-                to: message.to,
+                to: recipient,
                 subject: message.subject,
                 html: message.html,
                 text: message.text,

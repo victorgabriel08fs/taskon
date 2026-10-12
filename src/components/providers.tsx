@@ -20,7 +20,8 @@ const CurrentUserContext = createContext<AuthUser | null>(null);
 
 export function Providers({ user, children }: { user: AuthUser | null; children: ReactNode }) {
     useEffect(() => {
-        // Escuta a troca de tema do sistema; o tema inicial já veio no SSR.
+        // Acompanha o tema depois do boot; o inicial já foi aplicado pelo
+        // script inline do layout raiz, antes do primeiro paint.
         initializeTheme();
     }, []);
 
