@@ -27,11 +27,21 @@ const id = () => integer('id').primaryKey().generatedByDefaultAsIdentity();
 
 const tz = (name: string) => timestamp(name, { withTimezone: true, mode: 'date' });
 
+/**
+ * created_at/updated_at preenchidos pelo relógio da APLICAÇÃO (`new Date()`),
+ * não pelo `now()` do banco: é o que o Eloquent fazia, e é o que permite aos
+ * testes congelar o tempo (vi.setSystemTime) como o Carbon::setTestNow. O
+ * DEFAULT now() continua no banco para inserts feitos fora do Drizzle.
+ */
 const timestamps = {
-    createdAt: tz('created_at').notNull().defaultNow(),
+    createdAt: tz('created_at')
+        .notNull()
+        .defaultNow()
+        .$defaultFn(() => new Date()),
     updatedAt: tz('updated_at')
         .notNull()
         .defaultNow()
+        .$defaultFn(() => new Date())
         .$onUpdate(() => new Date()),
 };
 

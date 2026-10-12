@@ -28,3 +28,21 @@ describe('infraestrutura', () => {
         expect(parseAppDateTime('2026-02-31T10:00')).toBeNull();
     });
 });
+
+describe('relógio da aplicação', () => {
+    it('congela o tempo também nos timestamps (Carbon::setTestNow)', async () => {
+        const { vi } = await import('vitest');
+        const { createUser } = await import('./support/factories');
+
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date('2026-01-15T12:00:00Z'));
+
+        try {
+            const user = await createUser();
+
+            expect(user.createdAt.toISOString()).toBe('2026-01-15T12:00:00.000Z');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+});
