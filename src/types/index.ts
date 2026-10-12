@@ -252,6 +252,14 @@ export interface TrendPoint {
     completed: number;
 }
 
+/** Arquivamento automático, como a tela do quadro o recebe do servidor. */
+export interface AutoArchiveConfig {
+    /** Horário da varredura ("03:00"), no fuso do app. */
+    at: string;
+    /** Prazos oferecidos, em dias. Ausência de prazo (null) significa desligado. */
+    options: number[];
+}
+
 /* -------------------------------------------------------------------------- */
 /* Sessão e respostas                                                          */
 /* -------------------------------------------------------------------------- */

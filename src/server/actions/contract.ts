@@ -88,12 +88,6 @@ export interface BoardActions {
     deleteBoard: Action<{ boardId: number }>;
     /** view. Favorito é por pessoa. */
     toggleFavorite: Action<{ boardId: number }>;
-    /** manage. Roda agora a varredura do agendador; devolve a gaveta atualizada. */
-    archiveDoneCards: Action<{ boardId: number }, ArchivedCard[]>;
-    /** view. Leitura da gaveta de arquivados (não re-renderiza a página). */
-    loadArchivedCards: Action<{ boardId: number }, ArchivedCard[]>;
-    /** view. Descrição, checklists e comentários de todos os cards vivos (exportação). */
-    loadExportDetails: Action<{ boardId: number }, CardExportDetail[]>;
     /** manage. Erros em `email`. */
     addBoardMember: Action<{ boardId: number; email: string; role: 'admin' | 'member' }>;
     /** manage. O dono não sai (erro em toast). */
@@ -132,12 +126,32 @@ export interface CardActions {
     deleteCard: Action<{ cardId: number }>;
     /** A ordem final da lista de destino; cruzar a coluna de conclusão conclui/reabre. */
     moveCard: Action<{ cardId: number; board_list_id: number; ordered_ids: number[] }>;
-    /** redirect → /boards/{boardId} (flash "foi para Arquivados…"). */
-    archiveCard: Action<{ cardId: number }>;
-    /** Reabre e devolve à primeira coluna comum; devolve a gaveta atualizada. */
-    restoreCard: Action<{ cardId: number }, ArchivedCard[]>;
     toggleCardLabel: Action<{ cardId: number; labelId: number }>;
     toggleCardMember: Action<{ cardId: number; userId: number }>;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Arquivamento (src/server/actions/archive.ts)                                */
+/* -------------------------------------------------------------------------- */
+
+export interface ArchiveActions {
+    /** update. redirect → /boards/{boardId} (flash '"Título" foi para Arquivados, no menu do quadro.'). */
+    archiveCard: Action<{ cardId: number }>;
+    /** update. 404 se não está arquivado. Reabre, devolve à primeira coluna comum e devolve a gaveta atualizada. */
+    restoreCard: Action<{ cardId: number }, ArchivedCard[]>;
+    /** manage. Roda agora a varredura do agendador; devolve a gaveta atualizada. */
+    archiveDoneCards: Action<{ boardId: number }, ArchivedCard[]>;
+    /** view. Leitura da gaveta de arquivados (não re-renderiza a página). */
+    loadArchivedCards: Action<{ boardId: number }, ArchivedCard[]>;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Exportação (src/server/actions/export.ts)                                   */
+/* -------------------------------------------------------------------------- */
+
+export interface ExportActions {
+    /** view. Descrição, checklists e comentários de todos os cards vivos (não re-renderiza a página). */
+    loadExportDetails: Action<{ boardId: number }, CardExportDetail[]>;
 }
 
 /* -------------------------------------------------------------------------- */
