@@ -1,0 +1,353 @@
+'use client';
+
+import { useDroppable } from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { Check, CircleCheckBig, GripVertical, Minus, MoreHorizontal, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { AddCard } from '@/components/board/add-card';
+import { CardItem } from '@/components/board/card-item';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverItem } from '@/components/ui/popover';
+import { runAction } from '@/lib/actions';
+import { cn } from '@/lib/utils';
+import { updateList } from '@/server/actions/lists';
+import type { Board, BoardList, Card } from '@/types';
+
+/** O que a coluna carrega no arraste (para reordenar as colunas). */
+export interface ListDragData {
+    type: 'list';
+    listId: number;
+    title: string;
+}
+
+/** A área de soltura do corpo da coluna — é o alvo de um card numa lista vazia. */
+export interface DropzoneDragData {
+    type: 'dropzone';
+    listId: number;
+    title: string;
+}
+
+/**
+ * Os editores da coluna só aparecem porque a pessoa pediu (clicou no nome,
+ * em "Definir limite"), então o foco vai junto — no commit, como o
+ * `autoFocus` faria. Função fixa: o React só a chama quando o campo monta.
+ */
+const focusOnMount = (node: HTMLInputElement | null) => node?.focus();
+
+interface ListColumnProps {
+    list: BoardList;
+    board: Board;
+    cards: Card[];
+    onOpenCard: (card: Card) => void;
+    onDelete: (list: BoardList) => void;
+    /** true quando o filtro escondeu cards desta lista. */
+    filtered: boolean;
+    /** Modo exportação: ver `CardItem`. */
+    selectMode: boolean;
+    selected: Set<number>;
+    onToggleCard: (card: Card) => void;
+    onToggleList: (cards: Card[]) => void;
+}
+
+export function ListColumn({
+    list,
+    board,
+    cards,
+    onOpenCard,
+    onDelete,
+    filtered,
+    selectMode,
+    selected,
+    onToggleCard,
+    onToggleList,
+}: ListColumnProps) {
+    const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
+        id: `list:${list.id}`,
+        data: { type: 'list', listId: list.id, title: list.title } satisfies ListDragData,
+    });
+
+    // Área de soltura que cobre a coluna inteira — é o que permite largar um
+    // card numa lista vazia.
+    const { setNodeRef: setDropzoneRef, isOver } = useDroppable({
+        id: `dropzone:${list.id}`,
+        data: { type: 'dropzone', listId: list.id, title: list.title } satisfies DropzoneDragData,
+    });
+
+    const [editing, setEditing] = useState(false);
+    const [title, setTitle] = useState(list.title);
+
+    const overLimit = list.card_limit !== null && cards.length > list.card_limit;
+    const picked = cards.filter((card) => selected.has(card.id)).length;
+
+    // O rascunho parte sempre do nome atual: alguém pode ter renomeado a
+    // lista desde a última edição, e o campo não pode ressuscitar o antigo.
+    const startEditing = () => {
+        setTitle(list.title);
+        setEditing(true);
+    };
+
+    const saveTitle = () => {
+        const value = title.trim();
+
+        setEditing(false);
+
+        if (!value || value === list.title) {
+            setTitle(list.title);
+
+            return;
+        }
+
+        void runAction(updateList({ listId: list.id, title: value }));
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={{ transform: CSS.Translate.toString(transform), transition }}
+            className={cn(
+                'group/col flex max-h-full w-[19rem] shrink-0 flex-col rounded-xl bg-surface-2/95 shadow-lg ring-1 ring-black/5 backdrop-blur-sm',
+                'dark:bg-surface/90',
+                isDragging && 'opacity-40',
+                isOver && 'ring-2 ring-primary/60',
+            )}
+        >
+            {/* ------------------------------------------------------ cabeçalho */}
+            <header className="flex items-center gap-1 px-2 pt-2">
+                {selectMode ? (
+                    <button
+                        type="button"
+                        role="checkbox"
+                        aria-checked={picked === 0 ? false : picked === cards.length ? true : 'mixed'}
+                        onClick={() => onToggleList(cards)}
+                        aria-label={`Selecionar os cards de ${list.title}`}
+                        disabled={cards.length === 0}
+                        className="rounded p-1 text-muted-fg transition-colors hover:bg-surface-3 disabled:opacity-40"
+                    >
+                        <span
+                            className={cn(
+                                'grid size-4 place-items-center rounded border transition-colors duration-150',
+                                picked > 0 ? 'border-primary bg-primary text-primary-fg' : 'border-border bg-surface',
+                            )}
+                        >
+                            {picked > 0 &&
+                                (picked === cards.length ? (
+                                    <Check className="size-3" strokeWidth={3} />
+                                ) : (
+                                    <Minus className="size-3" strokeWidth={3} />
+                                ))}
+                        </span>
+                    </button>
+                ) : (
+                    <button
+                        type="button"
+                        ref={setActivatorNodeRef}
+                        {...attributes}
+                        {...listeners}
+                        aria-label={`Mover lista ${list.title}`}
+                        className="cursor-grab touch-none rounded p-1 text-muted-fg opacity-0 transition-opacity duration-150 hover:bg-surface-3 focus-visible:opacity-100 active:cursor-grabbing group-hover/col:opacity-70"
+                    >
+                        <GripVertical className="size-4" />
+                    </button>
+                )}
+
+                {editing ? (
+                    <input
+                        ref={focusOnMount}
+                        value={title}
+                        maxLength={120}
+                        aria-label="Nome da lista"
+                        onChange={(event) => setTitle(event.target.value)}
+                        onBlur={saveTitle}
+                        onKeyDown={(event) => {
+                            if (event.key === 'Enter') saveTitle();
+                            if (event.key === 'Escape') {
+                                setTitle(list.title);
+                                setEditing(false);
+                            }
+                        }}
+                        className="min-w-0 flex-1 rounded-md bg-surface px-2 py-1 text-sm font-semibold ring-2 ring-primary focus:outline-none"
+                    />
+                ) : (
+                    <button
+                        type="button"
+                        onClick={startEditing}
+                        className="min-w-0 flex-1 truncate rounded-md px-2 py-1 text-left text-sm font-semibold transition-colors hover:bg-surface-3"
+                    >
+                        {list.title}
+                    </button>
+                )}
+
+                {/* Sinaliza a coluna que conclui o card ao receber um arrasto —
+                    sem isso o comportamento seria invisível até acontecer. */}
+                {list.is_done && (
+                    <span
+                        title="Cards arrastados para cá são marcados como concluídos"
+                        className="shrink-0 text-success"
+                    >
+                        <CircleCheckBig className="size-3.5" />
+                    </span>
+                )}
+
+                <span
+                    className={cn(
+                        'shrink-0 rounded px-1.5 py-0.5 text-[11px] font-semibold tabular-nums',
+                        overLimit ? 'bg-danger/15 text-danger' : 'text-muted-fg',
+                    )}
+                    title={list.card_limit ? `Limite: ${list.card_limit}` : undefined}
+                >
+                    {cards.length}
+                    {list.card_limit !== null && `/${list.card_limit}`}
+                </span>
+
+                <Popover
+                    align="right"
+                    className="w-56"
+                    title={list.title}
+                    trigger={({ toggle }) => (
+                        <button
+                            type="button"
+                            onClick={toggle}
+                            aria-label="Ações da lista"
+                            className="shrink-0 rounded-md p-1.5 text-muted-fg transition-colors hover:bg-surface-3 hover:text-foreground"
+                        >
+                            <MoreHorizontal className="size-4" />
+                        </button>
+                    )}
+                >
+                    {({ close }) => (
+                        <ListMenu
+                            list={list}
+                            onRename={() => {
+                                close();
+                                startEditing();
+                            }}
+                            onDelete={() => {
+                                close();
+                                onDelete(list);
+                            }}
+                        />
+                    )}
+                </Popover>
+            </header>
+
+            {/* ---------------------------------------------------------- cards */}
+            <div
+                ref={setDropzoneRef}
+                className="min-h-[3rem] flex-1 space-y-2 overflow-y-auto overscroll-contain px-2 py-2"
+            >
+                <SortableContext items={cards.map((card) => `card:${card.id}`)} strategy={verticalListSortingStrategy}>
+                    {cards.map((card) => (
+                        <CardItem
+                            key={card.id}
+                            card={card}
+                            board={board}
+                            onOpen={onOpenCard}
+                            selectMode={selectMode}
+                            selected={selected.has(card.id)}
+                            onToggleSelect={onToggleCard}
+                        />
+                    ))}
+                </SortableContext>
+
+                {cards.length === 0 && (
+                    <p className="rounded-lg border border-dashed border-border/70 px-3 py-6 text-center text-xs text-muted-fg">
+                        {filtered ? 'Nada corresponde ao filtro' : 'Solte um card aqui'}
+                    </p>
+                )}
+            </div>
+
+            <footer className="px-2 pb-2">
+                <AddCard listId={list.id} />
+            </footer>
+        </div>
+    );
+}
+
+/** Conteúdo do menu "…" da coluna. Vive separado por causa do estado do limite. */
+function ListMenu({
+    list,
+    onRename,
+    onDelete,
+}: {
+    list: BoardList;
+    onRename: () => void;
+    onDelete: () => void;
+}) {
+    const [editingLimit, setEditingLimit] = useState(false);
+    const [limit, setLimit] = useState(String(list.card_limit ?? ''));
+
+    // Recebe o valor em vez de ler o estado: "Remover" limpa e salva no mesmo
+    // clique, e o `limit` da closure ainda seria o número antigo — o limite
+    // seria regravado em vez de removido.
+    const saveLimit = (raw: string) => {
+        const value = raw.trim();
+
+        void runAction(updateList({ listId: list.id, card_limit: value === '' ? null : Number(value) }));
+
+        setEditingLimit(false);
+    };
+
+    return (
+        <>
+            <PopoverItem onClick={onRename}>Renomear lista</PopoverItem>
+
+            {editingLimit ? (
+                <form
+                    onSubmit={(event) => {
+                        event.preventDefault();
+                        saveLimit(limit);
+                    }}
+                    className="animate-pop space-y-2 p-1.5"
+                >
+                    <input
+                        ref={focusOnMount}
+                        type="number"
+                        min={1}
+                        max={999}
+                        value={limit}
+                        aria-label="Limite de cards"
+                        placeholder="Sem limite"
+                        onChange={(event) => setLimit(event.target.value)}
+                        onKeyDown={(event) => event.key === 'Escape' && setEditingLimit(false)}
+                        className="w-full rounded-lg bg-surface-2 px-2.5 py-1.5 text-sm ring-1 ring-border focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+
+                    <div className="flex gap-2">
+                        <Button type="submit" size="sm" className="flex-1">
+                            Salvar
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                                setLimit('');
+                                saveLimit('');
+                            }}
+                        >
+                            Remover
+                        </Button>
+                    </div>
+                </form>
+            ) : (
+                <PopoverItem onClick={() => setEditingLimit(true)}>
+                    {list.card_limit ? `Limite: ${list.card_limit} cards` : 'Definir limite de cards'}
+                </PopoverItem>
+            )}
+
+            <PopoverItem
+                icon={<CircleCheckBig className={cn('size-4', list.is_done && 'text-success')} />}
+                onClick={() => void runAction(updateList({ listId: list.id, is_done: !list.is_done }))}
+            >
+                {list.is_done ? 'Não concluir mais aqui' : 'Concluir cards nesta coluna'}
+            </PopoverItem>
+
+            <div className="my-1 h-px bg-border" />
+
+            <PopoverItem danger icon={<Trash2 className="size-4" />} onClick={onDelete}>
+                Excluir lista
+            </PopoverItem>
+        </>
+    );
+}

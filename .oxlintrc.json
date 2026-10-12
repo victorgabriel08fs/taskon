@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "react", "nextjs", "jsx-a11y", "import", "unicorn", "oxc"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "warn",
+    "typescript/no-explicit-any": "error",
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "import/no-unassigned-import": "off"
+  },
+  "ignorePatterns": [".next/**", "node_modules/**", "drizzle/**", "vendor/**", "storage/**", "bootstrap/**", "database/**", ".data/**", "next-env.d.ts"]
+}
