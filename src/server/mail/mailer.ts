@@ -57,6 +57,17 @@ export async function sendMail(message: MailMessage): Promise<void> {
             return;
 
         case 'log':
+            // Em produção o corpo NÃO vai para o log: ele pode carregar um link
+            // de redefinição de senha, e log de deploy é lido por mais gente
+            // que a dona da conta. Lá o certo é configurar o Resend.
+            if (process.env.VERCEL_ENV === 'production') {
+                console.warn(
+                    `[mail:log] e-mail para ${message.to} ("${message.subject}") NÃO foi enviado: configure RESEND_API_KEY.`,
+                );
+
+                return;
+            }
+
             console.info(
                 `[mail:log] para ${message.to} · ${message.subject}\n${message.text ?? message.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 2000)}`,
             );

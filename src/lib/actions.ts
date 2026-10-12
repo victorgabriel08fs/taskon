@@ -19,6 +19,17 @@ import type { ActionResult, FieldErrors, Toast } from '@/types';
 
 const NETWORK_ERROR = 'Sem conexão com o servidor. Suas alterações locais não foram salvas.';
 
+/**
+ * Action que termina em `redirect()` não resolve a Promise: o Next a REJEITA
+ * com o erro de controle NEXT_REDIRECT enquanto navega (server-action-reducer).
+ * Não é falha — a tela já está trocando e o aviso viaja no cookie de flash.
+ */
+function isRedirect(error: unknown): boolean {
+    const digest = typeof error === 'object' && error !== null ? (error as { digest?: unknown }).digest : undefined;
+
+    return typeof digest === 'string' && digest.startsWith('NEXT_REDIRECT');
+}
+
 export function showToast(payload: Toast | undefined): void {
     if (!payload) return;
 
@@ -56,6 +67,8 @@ export async function runAction<T>(
 
         return result;
     } catch (error) {
+        if (isRedirect(error)) return null;
+
         // Deploy novo (action que não existe mais) ou rede fora: nada foi salvo.
         console.error(error);
         toast.error(NETWORK_ERROR);

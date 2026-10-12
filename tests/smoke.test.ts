@@ -46,3 +46,16 @@ describe('relógio da aplicação', () => {
         }
     });
 });
+
+describe('horário de verão', () => {
+    it('meia-noite que não existiu vira 01:00 do mesmo dia (como o Carbon)', async () => {
+        // São Paulo, 4/11/2018: o relógio pulou de 00:00 para 01:00.
+        const { fromWallClock: fromWall } = await import('@/lib/timezone');
+        const midnight = fromWall(2018, 11, 4);
+
+        expect(midnight.toISOString()).toBe('2018-11-04T03:00:00.000Z');
+        expect(dayKey(midnight)).toBe('2018-11-04');
+        expect(startOfAppDay('2018-11-04T15:00:00Z').toISOString()).toBe('2018-11-04T03:00:00.000Z');
+        expect(fromWall(2026, 10, 12, 14, 30).toISOString()).toBe('2026-10-12T17:30:00.000Z');
+    });
+});

@@ -81,11 +81,23 @@ function offsetMs(instant: number): number {
  */
 export function fromWallClock(year: number, month: number, day: number, hour = 0, minute = 0, second = 0): Date {
     const guess = Date.UTC(year, month - 1, day, hour, minute, second);
-    let instant = guess - offsetMs(guess);
+    const first = guess - offsetMs(guess);
+    const instant = guess - offsetMs(first);
 
-    instant = guess - offsetMs(instant);
+    // Horário que não existe (o relógio pulou no início do horário de verão —
+    // São Paulo até 2019, Santiago e Assunção hoje): a 2ª passada cai ANTES do
+    // pulo, na véspera quando o pulo é à meia-noite. Fica com o instante
+    // depois do pulo, como o Carbon.
+    const target = new Date(guess);
+    const wall = wallClock(instant);
+    const exists =
+        wall.year === target.getUTCFullYear() &&
+        wall.month === target.getUTCMonth() + 1 &&
+        wall.day === target.getUTCDate() &&
+        wall.hour === target.getUTCHours() &&
+        wall.minute === target.getUTCMinutes();
 
-    return new Date(instant);
+    return new Date(exists ? instant : Math.max(first, instant));
 }
 
 /**

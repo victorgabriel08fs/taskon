@@ -16,7 +16,9 @@ import type { Toast } from '@/types';
 export const FLASH_COOKIE = 'taskon_flash';
 
 export async function flash(toast: Toast): Promise<void> {
-    (await cookies()).set(FLASH_COOKIE, encodeURIComponent(JSON.stringify(toast)), {
+    // JSON cru: o Next já aplica encodeURIComponent ao valor do cookie, e o
+    // <FlashToaster /> decodifica uma vez só.
+    (await cookies()).set(FLASH_COOKIE, JSON.stringify(toast), {
         path: '/',
         maxAge: 60,
         sameSite: 'lax',

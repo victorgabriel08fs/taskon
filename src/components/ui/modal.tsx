@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from 'motion/react';
 import { X } from 'lucide-react';
-import { useEffect, useSyncExternalStore, type ReactNode } from 'react';
+import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 
@@ -27,12 +27,36 @@ function useIsClient(): boolean {
     return useSyncExternalStore(noop, () => true, () => false);
 }
 
+/**
+ * Modais abertos, do mais antigo ao mais novo. Só o do topo responde ao Esc:
+ * a confirmação aberta por cima do card fecha sozinha, sem levar o card junto.
+ */
+const openModals: symbol[] = [];
+
 export function Modal({ open, onClose, children, className, hideClose, labelledBy }: ModalProps) {
+    // Em ref para o efeito abaixo depender só de `open`: se ele re-rodasse a
+    // cada `onClose` novo do pai, este modal voltaria ao topo da pilha.
+    const onCloseRef = useRef(onClose);
+
+    useEffect(() => {
+        onCloseRef.current = onClose;
+    });
+
     useEffect(() => {
         if (!open) return;
 
+        const token = Symbol('modal');
+
+        openModals.push(token);
+
         const onKey = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') onClose();
+            // Esc já usado por um campo (cancelar edição) ou por um popover não
+            // fecha o modal; e só o modal do topo da pilha fecha.
+            if (event.key !== 'Escape' || event.defaultPrevented) return;
+            if (openModals[openModals.length - 1] !== token) return;
+
+            event.preventDefault();
+            onCloseRef.current();
         };
 
         // Trava o scroll do fundo sem "pular" o layout quando a barra some.
@@ -44,10 +68,11 @@ export function Modal({ open, onClose, children, className, hideClose, labelledB
         document.addEventListener('keydown', onKey);
 
         return () => {
+            openModals.splice(openModals.indexOf(token), 1);
             document.body.style.cssText = previous;
             document.removeEventListener('keydown', onKey);
         };
-    }, [open, onClose]);
+    }, [open]);
 
     const isClient = useIsClient();
 

@@ -74,4 +74,26 @@ function createDatabase(): Database {
 // ganha o seu banco em memória, isolado dos outros.
 const globalForDb = globalThis as unknown as { __taskonDb?: Database };
 
-export const db: Database = process.env.VITEST ? createDatabase() : (globalForDb.__taskonDb ??= createDatabase());
+let local: Database | undefined;
+
+function instance(): Database {
+    if (process.env.VITEST) return (local ??= createDatabase());
+
+    return (globalForDb.__taskonDb ??= createDatabase());
+}
+
+/**
+ * A conexão nasce na PRIMEIRA consulta, não na importação. O `next build`
+ * importa os módulos de servidor em vários workers ao mesmo tempo; aberto já
+ * no import, o PGlite local seria aberto por todos eles no mesmo diretório —
+ * o WASM aborta e o banco de desenvolvimento pode corromper. Na Vercel, o
+ * pool também só existe depois que alguém precisa dele.
+ */
+export const db: Database = new Proxy({} as Database, {
+    get(_target, property) {
+        const target = instance();
+        const value: unknown = Reflect.get(target, property, target);
+
+        return typeof value === 'function' ? value.bind(target) : value;
+    },
+});

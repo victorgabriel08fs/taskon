@@ -26,19 +26,22 @@ export function Popover({ trigger, children, align = 'left', className, title }:
             }
         };
 
+        // Na fase de CAPTURA e com preventDefault: roda antes do Esc do Modal
+        // (que escuta o mesmo document) e o avisa de que a tecla já foi usada —
+        // fechar o popover de etiquetas não fecha o card inteiro.
         const onKey = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
-                event.stopPropagation();
+                event.preventDefault();
                 setOpen(false);
             }
         };
 
         document.addEventListener('mousedown', onPointerDown);
-        document.addEventListener('keydown', onKey);
+        document.addEventListener('keydown', onKey, true);
 
         return () => {
             document.removeEventListener('mousedown', onPointerDown);
-            document.removeEventListener('keydown', onKey);
+            document.removeEventListener('keydown', onKey, true);
         };
     }, [open]);
 

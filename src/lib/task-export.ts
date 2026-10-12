@@ -1,4 +1,5 @@
 import type { Board, BoardList, Card, CardExportDetail } from '@/types';
+import { APP_LOCALE, APP_TIMEZONE, addAppDays, dayKey, startOfAppDay, wallClock } from '@/lib/timezone';
 import { pluralize } from '@/lib/utils';
 
 /**
@@ -41,7 +42,7 @@ export interface ManualSprints {
 export interface SprintTask {
     card: Card;
     listTitle: string;
-    /** Ausente enquanto a prop `exportDetails` não chegou do servidor. */
+    /** Ausente enquanto os detalhes (`loadExportDetails`) não chegaram do servidor. */
     detail: CardExportDetail | null;
 }
 
@@ -102,35 +103,35 @@ export const FORMAT_MIME: Record<ExportFormat, string> = {
  * A data do texto exportado leva o ano; a da interface não. O `formatDate` de
  * `lib/utils` corta o ano porque ali o contexto é o quadro aberto agora — o
  * texto é lido fora do app, meses depois, por quem não tem a tela do lado.
+ *
+ * O dia, porém, é o do fuso do app, como em toda data da tela: o prazo que o
+ * texto diz tem de ser o mesmo dia que o card mostra no quadro, qualquer que
+ * seja o fuso do computador de quem exporta.
  */
-const exportDateFormatter = new Intl.DateTimeFormat('pt-BR', {
+const exportDateFormatter = new Intl.DateTimeFormat(APP_LOCALE, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
+    timeZone: APP_TIMEZONE,
 });
 
-function formatExportDate(iso: string | null | undefined): string {
-    return iso ? exportDateFormatter.format(new Date(iso)) : '';
+function formatExportDate(value: Date | string | null | undefined): string {
+    return value ? exportDateFormatter.format(new Date(value)) : '';
 }
 
-const DAY_MS = 86_400_000;
-
-function addDays(date: Date, days: number): Date {
-    const result = new Date(date);
-
-    result.setDate(result.getDate() + days);
-
-    return result;
-}
-
-/** Segunda-feira da semana da data, à meia-noite. */
+/**
+ * Segunda-feira da semana da data, à meia-noite — no fuso do app. A virada do
+ * dia é a mesma do `dueState`: um prazo de domingo às 23:30 cai na semana que
+ * o quadro mostra, não na que o relógio do navegador acharia.
+ */
 function startOfWeek(date: Date): Date {
-    const result = new Date(date);
+    const { year, month, day } = wallClock(date);
 
-    result.setHours(0, 0, 0, 0);
+    // 0 = domingo. A sprint começa na segunda, como a semana de trabalho. O dia
+    // da semana sai do dia de CALENDÁRIO do fuso do app, não do instante.
+    const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
 
-    // getDay(): 0 = domingo. A sprint começa na segunda, como a semana de trabalho.
-    return addDays(result, -((result.getDay() + 6) % 7));
+    return addAppDays(startOfAppDay(date), -((weekday + 6) % 7));
 }
 
 /* -------------------------------------------------------------------------- */
@@ -206,13 +207,15 @@ function byDue(tasks: SprintTask[], weeks: number): Sprint[] {
 
         const start = startOfWeek(due);
 
-        windows.push({ start, end: addDays(start, 7 * weeks), tasks: [task] });
+        // Dias de calendário, não 7 × 24 h: numa troca de horário de verão a
+        // janela ainda termina à meia-noite de uma segunda.
+        windows.push({ start, end: addAppDays(start, 7 * weeks), tasks: [task] });
     });
 
     const sprints: Sprint[] = windows.map((window, index) => ({
         id: `due-${window.start.getTime()}`,
-        name: `Sprint ${index + 1} — ${formatExportDate(window.start.toISOString())} a ${formatExportDate(
-            new Date(window.end.getTime() - DAY_MS).toISOString(),
+        name: `Sprint ${index + 1} — ${formatExportDate(window.start)} a ${formatExportDate(
+            addAppDays(window.end, -1),
         )}`,
         tasks: window.tasks,
     }));
@@ -468,7 +471,9 @@ function renderJson(sprints: Sprint[], board: Board, options: ExportOptions): st
                 titulo: task.card.title,
                 lista: options.includeList && options.mode !== 'list' ? task.listTitle : undefined,
                 concluida: task.card.completed_at !== null,
-                prazo: options.includeDue ? (task.card.due_at?.slice(0, 10) ?? null) : undefined,
+                // O dia do prazo no fuso do app (o mesmo do `dueState`), seja
+                // qual for o deslocamento com que a data veio do servidor.
+                prazo: options.includeDue ? (task.card.due_at ? dayKey(task.card.due_at) : null) : undefined,
                 etiquetas: options.includeLabels ? labelNames(task.card, board) : undefined,
                 responsaveis: options.includeMembers ? memberNames(task.card, board) : undefined,
                 descricao: options.includeDescription ? (task.detail?.description ?? null) : undefined,
@@ -505,5 +510,6 @@ export function exportFileName(board: Board, format: ExportFormat): string {
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/^-|-$/g, '') || 'quadro';
 
-    return `${slug}-sprints-${new Date().toISOString().slice(0, 10)}.${FORMAT_EXTENSION[format]}`;
+    // "Hoje" no fuso do app: o dia em UTC daria amanhã a quem exporta à noite.
+    return `${slug}-sprints-${dayKey(new Date())}.${FORMAT_EXTENSION[format]}`;
 }

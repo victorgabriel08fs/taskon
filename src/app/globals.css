@@ -291,3 +291,48 @@
         scroll-behavior: auto !important;
     }
 }
+
+/* ---------------------------------------------------------------------------
+ | Barra de progresso da navegação — ver src/components/navigation-progress.tsx.
+ | Só transform e opacity, como toda animação do app.
+ --------------------------------------------------------------------------- */
+
+@keyframes nav-progress-grow {
+    from {
+        transform: scaleX(0);
+    }
+    to {
+        transform: scaleX(0.9);
+    }
+}
+
+@keyframes nav-progress-done {
+    from {
+        transform: scaleX(0.9);
+        opacity: 1;
+    }
+    60% {
+        transform: scaleX(1);
+        opacity: 1;
+    }
+    to {
+        transform: scaleX(1);
+        opacity: 0;
+    }
+}
+
+.nav-progress-grow,
+.nav-progress-done {
+    height: 100%;
+    transform-origin: left;
+    background-color: var(--primary);
+    box-shadow: 0 0 10px color-mix(in oklch, var(--primary) 60%, transparent);
+}
+
+.nav-progress-grow {
+    animation: nav-progress-grow 8s cubic-bezier(0.08, 0.82, 0.17, 1) forwards;
+}
+
+.nav-progress-done {
+    animation: nav-progress-done 0.45s ease-out forwards;
+}

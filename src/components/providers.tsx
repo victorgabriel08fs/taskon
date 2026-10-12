@@ -3,6 +3,7 @@
 import { createContext, use, useEffect, type ReactNode } from 'react';
 import { Toaster } from 'sonner';
 import { FlashToaster } from '@/components/flash-toaster';
+import { NavigationProgress } from '@/components/navigation-progress';
 import { initializeTheme } from '@/hooks/use-appearance';
 import { releasePomodoro } from '@/lib/pomodoro';
 import type { AuthUser } from '@/types';
@@ -33,6 +34,7 @@ export function Providers({ user, children }: { user: AuthUser | null; children:
 
     return (
         <CurrentUserContext value={user}>
+            <NavigationProgress />
             {children}
             <FlashToaster />
             <Toaster

@@ -100,9 +100,19 @@ export function confirmed<T extends { password: string; password_confirmation?: 
     }
 }
 
-/** Id numérico vindo do cliente (rota/payload). */
+/** Teto do `integer` do Postgres: id maior que isso nem pode existir. */
+export const MAX_ID = 2_147_483_647;
+
+/**
+ * Id numérico vindo do cliente (rota/payload). Acima do teto do `integer` a
+ * consulta quebraria no banco (500) em vez de virar 422.
+ */
 export function id() {
-    return z.number({ error: 'Identificador inválido.' }).int().positive();
+    return z
+        .number({ error: 'Identificador inválido.' })
+        .int({ error: 'Identificador inválido.' })
+        .positive({ error: 'Identificador inválido.' })
+        .max(MAX_ID, { error: 'Identificador inválido.' });
 }
 
 /**

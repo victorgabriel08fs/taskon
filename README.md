@@ -5,8 +5,8 @@
 <h1 align="center">Taskon</h1>
 
 <p align="center">
-  Um clone do Trello para rodar na sua máquina.<br>
-  Laravel 13 · Inertia v3 · React 19 · TypeScript · Tailwind v4 · dnd-kit
+  Um clone do Trello, pronto para a Vercel.<br>
+  Next.js 16 · React 19 · TypeScript · Tailwind v4 · Drizzle + Postgres · dnd-kit
 </p>
 
 ---
@@ -32,10 +32,11 @@
 - **Exportar como prompt**: entra no modo seleção, você marca os cards e sai um
   texto separado em sprints — por lista, por prazo, em blocos de N ou montado na
   mão — em Markdown, texto puro ou JSON, pronto para colar num LLM.
+- **Pomodoro** no cabeçalho, ligado ao card em que você está focando.
 - **Feed de atividades** do quadro, carregado depois da primeira pintura.
 - **Resumo diário por e-mail** com o que venceu, o que vence hoje e o que vem
   nos próximos dias — entregue pelo Resend, com opt-out em
-  `/settings/notificações`.
+  `/settings/notifications`.
 - **Autenticação** completa: cadastro, login com rate limit, recuperação de
   senha, troca de senha, perfil com cor de avatar e exclusão de conta.
 - **Tema claro/escuro/sistema** sem flash no primeiro carregamento.
@@ -43,120 +44,59 @@
 
 ---
 
-## Rodando com Docker — https://tasks.localhost
+## Como está montado
 
-Este é o caminho principal. O app roda atrás do **Traefik** da infra local e usa
-os serviços **compartilhados** dela: o MariaDB (`mariadb`) e o Mailpit
-(`mailpit`). Nenhum banco ou caixa de e-mail sobe junto com o projeto, e nenhuma
-porta é publicada no host — quem expõe é o proxy.
+Um único projeto Next.js (App Router) faz as duas pontas — e é exatamente isso
+que a Vercel hospeda:
 
-### Pré-requisitos (uma vez)
-
-**1. A infra no ar** — na pasta do `servidor-docker-traefik`:
-
-```bash
-docker network create web     # se ainda não existir
-docker compose up -d
+```
+Navegador ──► React 19 (Client Components: Kanban, modais, gráficos)
+                 ▲
+                 │  RSC + Server Actions (sem API REST, sem token no navegador)
+                 ▼
+          Next.js na Vercel ──► Server Components (páginas), Server Actions (mutações),
+                 │               Route Handlers (crons, /up)
+                 ▼
+          Postgres (Neon ou Supabase) via Drizzle ORM
 ```
 
-**2. O banco criado** no MariaDB central:
-
-```bash
-docker exec -i mariadb mariadb -uroot -proot -e \
-  "CREATE DATABASE IF NOT EXISTS \`taskon\`      CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   CREATE DATABASE IF NOT EXISTS \`taskon_test\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-```
-
-**3. O certificado cobrindo o domínio** — `tasks.localhost` já foi acrescentado
-à lista `$Dominios` do `gerar-certificados.ps1` da infra, mas o script precisa
-rodar para o certificado ser reemitido:
-
-```powershell
-.\gerar-certificados.ps1      # na pasta da infra; reinicia o Traefik
-```
-
-Depois **feche o navegador por completo** e reabra — F5 não basta, o Chrome só
-relê o repositório de certificados ao iniciar. Sem esse passo o site abre, mas
-com aviso de certificado inválido.
-
-**4. Os assets buildados** (o nginx serve `public/build` direto do disco):
-
-```bash
-npm install
-npm run build
-```
-
-### Subir
-
-```bash
-docker compose up -d
-```
-
-Na primeira vez o serviço `taskon-init` roda `composer install`, `migrate` e o
-seed — acompanhe com `docker compose logs -f taskon-init`. Quando ele terminar,
-abra **https://tasks.localhost**.
-
-### Como está montado
-
-| Container | Papel |
+| Antes (Laravel) | Agora (Next.js) |
 | --- | --- |
-| `taskon-init` | Roda uma vez: composer, migrations, seed. Idempotente. |
-| `taskon-app` | PHP-FPM 8.3. Só ele fala com o banco. |
-| `taskon-scheduler` | `schedule:work`. É quem dispara o resumo diário e o arquivamento dos concluídos — sem ele nada acontece sozinho. |
-| `taskon-nginx` | Serve `public/` e repassa PHP ao `taskon-app`. É quem tem as labels do Traefik. |
-
-O código é **bind mount** do Windows: editar um `.php` reflete na hora (o
-opcache revalida a cada 2 s). O `vendor/` é a exceção — mora num volume do
-Docker, por performance, e é **separado** do `vendor/` do Windows que a IDE
-enxerga. Mudou `composer.json`? Rode `docker compose exec taskon-app composer install`.
-
-### Comandos do dia a dia
-
-```bash
-docker compose exec taskon-app php artisan <comando>
-docker compose exec taskon-app php artisan test
-docker compose exec taskon-app composer install
-docker compose logs -f taskon-app          # ou https://logs.localhost (Dozzle)
-docker compose restart taskon-app          # depois de mexer em .env
-docker compose down                        # derruba só este projeto
-```
-
-Mudou algo em `public/build`? Rode `npm run build` **no host** — não existe Node
-dentro dos containers. Para hot reload, use o modo sem Docker abaixo.
+| Controllers + Form Requests | Server Actions em `src/server/actions` (`defineAction`: autentica → valida → executa → re-renderiza) |
+| Regras em controllers/`app/Support` | Serviços em `src/server/services` |
+| `Inertia::render` + props | Server Components em `src/app` + loaders em `src/server/queries` |
+| `JsonResource` | `src/server/resources` (o mesmo formato JSON de antes, tipado em `src/types`) |
+| `BoardPolicy` | `src/server/policies/board.ts` |
+| Eloquent + MariaDB | Drizzle + Postgres (`src/server/db/schema.ts`, migrations em `drizzle/`) |
+| Sessão do Laravel | Sessão própria por cookie HttpOnly, token em hash no banco |
+| `php artisan schedule:work` | Vercel Cron (`vercel.json`) → `/api/cron/*` |
+| Mailpit / Resend | `src/server/mail` (Resend em produção; SMTP/console no dev) |
+| PHPUnit | Vitest + PGlite (Postgres em memória) |
 
 ---
 
-## Rodando sem Docker
+## Rodando localmente
 
-Útil para hot reload do Vite, que atrás do HTTPS do proxy seria bloqueado como
-*mixed content*. Aponta para o **mesmo banco e o mesmo Mailpit** — a infra
-publica o MariaDB em `127.0.0.1:3309` e o SMTP do Mailpit em `127.0.0.1:1025`
-justamente para clientes de fora do Docker.
-
-| | Versão usada aqui |
-| --- | --- |
-| PHP | 8.3 (com `pdo_mysql`) |
-| Composer | 2.8 |
-| Node | 22 |
+Pré-requisito: **Node 24**.
 
 ```bash
-composer install
 npm install
-cp .env.example .env          # já vem apontando para 127.0.0.1:3309
-php artisan key:generate
-
-php artisan serve             # http://localhost:8000
-npm run dev                   # Vite com hot reload
+cp .env.example .env.local     # ajuste o que precisar
+npm run db:migrate             # cria as tabelas
+npm run db:seed                # contas e quadros de demonstração
+npm run dev                    # http://localhost:3000
 ```
 
-Ou `composer dev`, que sobe servidor, fila e Vite juntos.
+Sem `DATABASE_URL`, o app usa o **PGlite** — um Postgres de verdade compilado
+para WebAssembly, gravando em `./.data/pglite`. Não há nada para instalar nem
+container para subir. Para usar um Postgres seu (local, Neon, Supabase), basta
+preencher `DATABASE_URL` no `.env.local`.
 
-> Os dois modos compartilham o banco. O que muda é só o endereço: dentro do
-> container é `mariadb:3306`, fora é `127.0.0.1:3309`. Como o Dotenv do Laravel é
-> imutável, a variável de ambiente que o compose injeta vence o `.env` — por isso
-> o mesmo arquivo serve para os dois.
+> Vindo da versão Laravel? O `.env` antigo continua na pasta (ele é ignorado
+> pelo git) e o Next também o lê. Crie o `.env.local` a partir do
+> `.env.example`: o que estiver nele vence o `.env`.
 
-### Contas de demonstração
+### Contas de demonstração (`npm run db:seed`)
 
 | E-mail | Senha | Papel |
 | --- | --- | --- |
@@ -166,20 +106,78 @@ Ou `composer dev`, que sobe servidor, fila e Vite juntos.
 Contas novas criadas pelo `/register` já nascem com um quadro de exemplo
 preenchido — nada de tela vazia.
 
----
-
-## Comandos
+### Comandos
 
 ```bash
-php artisan test          # suíte de testes (roda no banco taskon_test)
-npm run types             # checagem de tipos do TypeScript
-npm run build             # build de produção
-./vendor/bin/pint         # formatação do PHP
-php artisan migrate:fresh --seed   # zera e repovoa o banco
+npm run dev            # servidor de desenvolvimento
+npm run build          # build de produção (o que a Vercel roda, sem a migração)
+npm run types          # checagem de tipos (TypeScript 7)
+npm run lint           # oxlint
+npm test               # suíte de testes (Vitest + PGlite em memória)
+npm run db:migrate     # aplica as migrations de ./drizzle
+npm run db:seed        # dados de demonstração (recusa rodar em produção)
+npm run db:fresh       # apaga tudo, migra e semeia (o migrate:fresh --seed)
+npm run db:generate    # gera migration nova depois de mudar o schema
+npm run digest -- --dry-run          # quem receberia o resumo hoje
+npm run archive-done -- --dry-run    # o que a varredura arquivaria
 ```
 
-E-mails (como o link de recuperação de senha) vão para o **Mailpit central** da
-infra e podem ser lidos em https://mail.localhost. Nada sai para a internet.
+E-mails no desenvolvimento: com `MAIL_MAILER=log` (o padrão sem chave do
+Resend) eles são impressos no terminal; com `MAIL_MAILER=smtp` e
+`MAIL_HOST=127.0.0.1`/`MAIL_PORT=1025` caem no Mailpit.
+
+---
+
+## Publicando na Vercel
+
+1. **Importe o repositório** na Vercel (framework: Next.js — detectado sozinho).
+2. **Conecte um Postgres.** O caminho mais curto é *Storage › Marketplace ›
+   Neon*: a integração cria o banco e injeta `DATABASE_URL` (com pooler) e
+   `DATABASE_URL_UNPOOLED` no projeto. Com Supabase, cadastre à mão:
+   `DATABASE_URL` = string do pooler em modo *transaction* (porta 6543) e
+   `DIRECT_URL` = conexão direta (porta 5432), usada só para migrar.
+3. **Variáveis de ambiente** (Settings › Environment Variables):
+
+   | Variável | Valor |
+   | --- | --- |
+   | `APP_TIMEZONE` | `America/Sao_Paulo` |
+   | `CRON_SECRET` | uma string aleatória longa (`openssl rand -hex 32`) |
+   | `RESEND_API_KEY` | a chave do Resend |
+   | `MAIL_FROM_ADDRESS` | remetente de um domínio verificado no Resend |
+   | `APP_URL` | opcional — sem ela, os links usam o domínio de produção da Vercel |
+
+4. **Deploy.** O build roda `npm run vercel-build`, que aplica as migrations
+   pendentes e depois faz o `next build`.
+5. **Crie sua conta** pelo `/register` — o seed de demonstração não roda em
+   produção (as senhas dele são públicas).
+
+### Agendamentos
+
+Os dois jobs que o `taskon-scheduler` rodava viraram **Vercel Cron Jobs**
+(`vercel.json`, horários em UTC):
+
+| Job | Cron (UTC) | Horário em São Paulo |
+| --- | --- | --- |
+| `/api/cron/daily-digest` | `0 10 * * *` | 07:00 |
+| `/api/cron/archive-done-cards` | `0 6 * * *` | 03:00 |
+
+A Vercel chama as rotas com `Authorization: Bearer $CRON_SECRET`; sem o
+segredo certo elas respondem 401. No plano Hobby a Vercel garante a hora, não
+o minuto — o disparo pode cair em qualquer momento daquela hora. Mudou
+`DIGEST_AT`/`AUTO_ARCHIVE_AT`? Ajuste também o `schedule` no `vercel.json`.
+
+Para disparar na mão (útil para conferir um deploy):
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" "https://seu-app.vercel.app/api/cron/daily-digest?dry-run=1"
+```
+
+### Resend
+
+Enquanto o domínio não estiver verificado no painel do Resend, a API **só**
+aceita `onboarding@resend.dev` como remetente e **só** entrega para o e-mail da
+sua conta. Qualquer outro par devolve 403 — o cron registra a falha no log da
+função e não carimba o envio, então a pessoa recebe no dia seguinte.
 
 ---
 
@@ -192,109 +190,49 @@ nada no radar não recebe nada: caixa de entrada limpa vale mais que constância
 Liga e desliga em **Configurações › Notificações**, que também mostra a prévia do
 que o e-mail de hoje diria e tem um botão para mandar um agora.
 
-```bash
-php artisan taskon:daily-digest --dry-run     # quem receberia, sem enviar
-php artisan taskon:daily-digest --user=victor@taskon.test --force
-php artisan taskon:daily-digest               # o que o agendador roda
-```
-
-Quem dispara sozinho é o container `taskon-scheduler`. Fora do Docker, rode
-`php artisan schedule:work` em outro terminal.
-
-### Entregando de verdade pelo Resend
-
-No desenvolvimento o resumo cai no Mailpit e você confere o layout em
-https://mail.localhost. Para sair pela internet, no `.env`:
-
-```dotenv
-MAIL_MAILER=resend
-RESEND_API_KEY=re_xxxxxxxxxxxx
-MAIL_FROM_ADDRESS="taskon@seudominio.com"
-```
-
-E `docker compose up -d` de novo (o compose repassa as duas variáveis aos
-containers). Um detalhe que custa tempo: enquanto o domínio não estiver
-verificado no painel do Resend, a API **só** aceita `onboarding@resend.dev` como
-remetente e **só** entrega para o e-mail da sua conta. Qualquer outro par
-devolve 403 — o comando marca a linha com `✗` e o motivo aparece em
-`storage/logs`.
-
-> Com `MAIL_MAILER=resend` **todo** e-mail passa a ir pela API, inclusive o link
-> de recuperação de senha. O Mailpit deixa de ver qualquer coisa.
-
-> ⚠️ O `MAIL_HOST` é **`mailpit-central`**, não `mailpit`. Três containers
-> respondem pelo nome `mailpit` na rede `web` (o central, o do `feedpass` e o do
-> `encomendas`) e o DNS do Docker faz round-robin entre eles — o e-mail cairia na
-> caixa do projeto errado. O alias exclusivo foi criado no compose da infra. Ver
-> [BOAS_PRATICAS.md](BOAS_PRATICAS.md#104-️-nome-de-serviço-na-rede-web-é-global).
-
----
-
 ## Arquivamento automático dos concluídos
 
-A coluna "Concluído" é a que mais cresce e a que menos se lê: em algumas semanas
-ela tem mais cards que todas as outras somadas, e o que falta fica espremido. No
-menu **⋯ › Arquivados** de cada quadro você escolhe em quantos dias um card
-concluído sai da coluna — **nunca** (o padrão), 1, 3, 7, 14 ou 30 dias.
-
-Todo dia às **03:00** a varredura tira das colunas os concluídos que passaram do
-prazo. Arquivar **não apaga**: o card sai do Kanban, continua no banco com
-`archived_at`, e a mesma tela lista tudo o que está na gaveta com um botão de
-**Restaurar**. Também dá para arquivar um card na mão, pelo próprio card.
-
-Dois cuidados que valem saber:
+No menu **⋯ › Arquivados** de cada quadro você escolhe em quantos dias um card
+concluído sai da coluna — **nunca** (o padrão), 1, 3, 7, 14 ou 30 dias. Todo dia
+às **03:00** a varredura tira das colunas os concluídos que passaram do prazo.
+Arquivar **não apaga**: o card continua no banco com `archived_at`, e a mesma
+tela lista tudo o que está na gaveta com um botão de **Restaurar**.
 
 - **O progresso não afunda.** Um concluído arquivado continua contando no total e
-  nos concluídos do quadro, no gráfico de ritmo e em "concluídas na semana" —
-  senão ligar o recurso faria a barra do quadro cair de 100% para 0% justamente
-  por o trabalho ter terminado. Quem some da conta é o card arquivado **sem**
-  concluir, que foi abandonado de propósito.
+  nos concluídos do quadro, no gráfico de ritmo e em "concluídas na semana".
 - **Restaurar reabre.** O card volta para a primeira coluna que não é de
-  conclusão, e sem `completed_at`. Se voltasse ainda concluído, a varredura o
-  levaria de novo na madrugada seguinte.
-
-```bash
-php artisan taskon:archive-done-cards --dry-run       # o que sairia, sem arquivar
-php artisan taskon:archive-done-cards --board=1       # só um quadro
-php artisan taskon:archive-done-cards                 # o que o agendador roda
-```
-
-O horário e os prazos oferecidos ficam em `config/taskon.php › auto_archive`.
+  conclusão, e sem `completed_at` — senão a varredura o levaria de novo.
 
 ---
 
 ## Como o projeto está organizado
 
 ```
-app/
-├── Console/Commands/     # taskon:daily-digest, taskon:archive-done-cards
-├── Http/Controllers/     # orquestração: autoriza → valida → persiste → redireciona
-├── Http/Resources/       # contrato de saída, espelha resources/js/types
-├── Mail/                 # DailyDigest (view em resources/views/mail/)
-├── Models/               # Eloquent puro
-├── Policies/             # BoardPolicy governa tudo que pertence a um quadro
-└── Support/              # ActivityLogger, DemoBoardBuilder, TaskDigest
-
-docker/
-├── php/                  # imagem PHP-FPM 8.3 + entrypoint e init idempotentes
-└── nginx/                # front do PHP-FPM, com as labels do Traefik no compose
-
-resources/js/
-├── pages/                # uma pasta por rota (nome = Inertia::render)
-├── components/ui/        # primitivos sem conhecimento de domínio
-├── components/board/     # Kanban: coluna, card, modal, filtros, atividade
-├── components/dashboard/ # gráficos em SVG puro, sem lib de charts
-├── layouts/              # casca das páginas
-├── hooks/                # tema, ripple, revelação no scroll
-├── lib/                  # cn(), formatação de data, paleta
-└── types/                # contrato TypeScript compartilhado
+src/
+├── app/                  # rotas (App Router): páginas, layouts, crons em api/cron
+├── components/
+│   ├── ui/               # primitivos sem conhecimento de domínio
+│   ├── layouts/          # AppLayout, AuthLayout, SettingsLayout
+│   ├── board/            # Kanban: quadro, coluna, card, modais, filtros, atividade
+│   ├── boards/           # lista de quadros
+│   └── dashboard/        # gráficos em SVG puro, sem lib de charts
+├── hooks/                # tema, ripple, revelação no scroll, pomodoro
+├── lib/                  # cn(), datas no fuso do app, paleta, exportação, actions (cliente)
+├── types/                # contrato TypeScript compartilhado (os DTOs)
+├── server/
+│   ├── actions/          # Server Actions ('use server') + contract.ts
+│   ├── services/         # regras de negócio
+│   ├── queries/          # loaders das páginas
+│   ├── resources/        # formato de saída (DTOs)
+│   ├── policies/         # autorização pelo quadro
+│   ├── auth/             # sessão, senha, rate limit
+│   ├── mail/             # mailer + templates
+│   └── db/               # schema Drizzle e conexão
+└── proxy.ts              # redireciona visitante das telas autenticadas
+drizzle/                  # migrations SQL geradas
+scripts/                  # migrate, seed, fresh, digest, archive-done (o antigo artisan)
+tests/                    # Vitest
 ```
-
-Duas telas, dois endereços: **`/dashboard`** são os números e os gráficos,
-**`/boards`** é a lista de quadros. Depois do login você cai no painel.
-
-Rotas em [`routes/web.php`](routes/web.php) (painel e quadros),
-[`routes/auth.php`](routes/auth.php) e [`routes/settings.php`](routes/settings.php).
 
 ---
 
@@ -314,9 +252,4 @@ Rotas em [`routes/web.php`](routes/web.php) (painel e quadros),
 ## Documentação
 
 **[BOAS_PRATICAS.md](BOAS_PRATICAS.md)** — as convenções do projeto e o porquê
-de cada decisão: autorização pelo agregado, resources como contrato, eager
-loading do quadro, estratégia de ordenação, tokens de tema, regras de animação
-e acessibilidade, integração com a infra do Traefik (incluindo as armadilhas de
-proxy e de DNS na rede compartilhada), e o que ainda falta implementar.
-
-Leia antes de abrir um PR.
+de cada decisão. Leia antes de abrir um PR.
