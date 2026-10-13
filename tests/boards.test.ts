@@ -659,7 +659,7 @@ describe('membros', () => {
 
         const added = await addBoardMember(owner, board.id, { email: 'Carla@Taskon.test', role: 'admin' });
 
-        expect(added).toEqual({ id: guest.id, name: 'Carla Convidada' });
+        expect(added).toEqual({ kind: 'added', member: { id: guest.id, name: 'Carla Convidada' } });
         expect((await membership(board, guest))?.role).toBe('admin');
 
         const [entry] = await activitiesOf(board, 'member.added');
@@ -667,18 +667,21 @@ describe('membros', () => {
         expect(entry).toMatchObject({ userId: owner.id, description: 'adicionou Carla Convidada ao quadro' });
     });
 
-    it('recusa e-mail sem conta e quem já participa, no campo email', async () => {
+    it('e-mail sem conta vira convite por e-mail (ver tests/invitations.test.ts)', async () => {
+        const owner = await factory.createUser();
+        const board = await factory.createBoard(owner);
+
+        const result = await addBoardMember(owner, board.id, { email: 'Ninguem@Taskon.test', role: 'member' });
+
+        expect(result).toEqual({ kind: 'invited', email: 'ninguem@taskon.test' });
+        expect(await activitiesOf(board, 'member.added')).toHaveLength(0);
+    });
+
+    it('recusa quem já participa, no campo email', async () => {
         const owner = await factory.createUser();
         const board = await factory.createBoard(owner);
         const member = await factory.createUser();
         await factory.addMember(board, member);
-
-        const missing = await expectHttpError(
-            addBoardMember(owner, board.id, { email: 'ninguem@taskon.test', role: 'member' }),
-            422,
-            'email',
-        );
-        expect(missing.errors?.email).toBe('Nenhuma conta com esse e-mail. Peça para a pessoa se cadastrar primeiro.');
 
         const already = await expectHttpError(addBoardMember(owner, board.id, { email: member.email, role: 'admin' }), 422, 'email');
         expect(already.errors?.email).toBe('Essa pessoa já participa do quadro.');

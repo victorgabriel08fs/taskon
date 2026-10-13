@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { defineAction, toast } from '@/server/action';
 import type { AuthActions } from '@/server/actions/contract';
 import { endSession, requestMeta, safeRedirectPath, startSession } from '@/server/auth/session';
+import { HttpError } from '@/server/errors';
 import { flash, flashStatus } from '@/server/flash';
 import {
     authenticate,
@@ -11,6 +12,7 @@ import {
     resetPassword as resetPasswordWithToken,
     sendPasswordResetLink as sendResetLinkTo,
 } from '@/server/services/auth';
+import { INVITATION_MESSAGES, acceptInvitation } from '@/server/services/invitations';
 import { confirmed, email, messages, newPassword, passwordInput, requiredString, z } from '@/server/validation';
 
 /**
@@ -59,15 +61,38 @@ export const register = defineAction(
             email: email(),
             password: newPassword(),
             password_confirmation: passwordConfirmation,
+            invite: z.string().max(200).nullable().optional(),
         })
         .superRefine(confirmed),
-    async (input, ctx) => {
+    async ({ invite, ...input }, ctx) => {
         if (ctx) redirect('/dashboard');
 
         const { ip } = await requestMeta();
         const user = await registerUser(input, ip);
 
         await startSession(user.id, false);
+
+        // Veio pelo link de um convite (/register?invite=…): a conta nasce já
+        // dentro do quadro. Convite que deixou de valer no meio do caminho não
+        // estraga o cadastro — a conta fica criada e o aviso explica.
+        if (invite) {
+            const joined = await acceptInvitation(user, invite).catch((error: unknown) => {
+                if (error instanceof HttpError) return null;
+
+                throw error;
+            });
+
+            if (joined) {
+                await flash(toast('success', `Conta criada! Você entrou no quadro "${joined.boardTitle}".`));
+
+                redirect(`/boards/${joined.boardId}`);
+            }
+
+            await flash(toast('info', `Conta criada! ${INVITATION_MESSAGES.invalid}`));
+
+            redirect('/dashboard');
+        }
+
         await flash(toast('success', 'Conta criada! Seu primeiro quadro já está lá dentro.'));
 
         redirect('/dashboard');

@@ -17,6 +17,10 @@
   por quadro, próximos vencimentos e feed de atividade.
 - **Quadros** com 8 fundos em gradiente, favoritos e membros com papéis
   (dono / admin / membro).
+- **Convites por e-mail**: quem já tem conta entra no quadro na hora; quem
+  ainda não tem recebe um link que vale 7 dias, cria a conta por ele e já cai
+  dentro do quadro. Os convites pendentes aparecem na lista de membros, com
+  reenviar e cancelar.
 - **Listas e cards** com arrastar e soltar de verdade — entre colunas,
   reordenando colunas, com auto-scroll nas bordas e suporte a teclado.
   A coluna marcada com ✓ conclui o card que receber (e reabre o que sair).

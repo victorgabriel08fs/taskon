@@ -118,6 +118,17 @@ export const config = {
 
         bcryptRounds: Math.min(14, Math.max(10, Number.parseInt(env('BCRYPT_ROUNDS') ?? '12', 10) || 12)),
     },
+
+    /** Convites por e-mail para quem ainda não tem conta. */
+    invitations: {
+        /** Quantos dias o link do convite vale. Convidar de novo renova o prazo. */
+        expiresInDays: 7,
+
+        // Cada convite manda um e-mail para um endereço que a pessoa digitou:
+        // sem teto, o botão vira um disparador de e-mail (e de custo no Resend,
+        // e de reputação do domínio). Por quem convida, por hora.
+        maxPerHour: 20,
+    },
 } as const;
 
 export type AutoArchiveOption = (typeof config.autoArchive.options)[number];

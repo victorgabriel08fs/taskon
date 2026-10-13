@@ -1,8 +1,21 @@
 'use client';
 
-import { Archive, ClipboardList, History, ImageIcon, MoreHorizontal, Star, Trash2, UserPlus, X } from 'lucide-react';
+import {
+    Archive,
+    ClipboardList,
+    History,
+    ImageIcon,
+    Mail,
+    MoreHorizontal,
+    RotateCw,
+    Star,
+    Trash2,
+    UserPlus,
+    X,
+} from 'lucide-react';
 import { useState } from 'react';
 import { FilterPopover, type BoardFilters } from '@/components/board/filters';
+import { TimeAgo } from '@/components/time-ago';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/input';
@@ -11,7 +24,8 @@ import { runAction, useActionForm } from '@/lib/actions';
 import { BOARD_BACKGROUND_LABEL, boardBackgroundClass } from '@/lib/palette';
 import { cn } from '@/lib/utils';
 import { addBoardMember, removeBoardMember, toggleFavorite, updateBoard } from '@/server/actions/boards';
-import type { Board, BoardBackground } from '@/types';
+import { resendBoardInvitation, revokeBoardInvitation } from '@/server/actions/invitations';
+import type { Board, BoardBackground, BoardInvitation } from '@/types';
 
 interface BoardHeaderProps {
     board: Board;
@@ -305,7 +319,10 @@ function InvitePopover({ board }: { board: Board }) {
                         }}
                         className="space-y-2"
                     >
-                        <Field error={form.errors.email}>
+                        <Field
+                            error={form.errors.email}
+                            hint="Quem ainda não tem conta recebe o convite por e-mail."
+                        >
                             <Input
                                 type="email"
                                 required
@@ -360,8 +377,63 @@ function InvitePopover({ board }: { board: Board }) {
                             </div>
                         ))}
                     </div>
+
+                    {board.invitations.length > 0 && (
+                        <div className="space-y-1 border-t border-border pt-2">
+                            <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-fg">
+                                Convites pendentes
+                            </p>
+
+                            {board.invitations.map((invitation) => (
+                                <PendingInvitation key={invitation.id} invitation={invitation} />
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
         </Popover>
+    );
+}
+
+/**
+ * Um convite que ainda não foi aceito: o e-mail no lugar do avatar, o papel e
+ * o prazo. Reenviar troca o link (o antigo para de valer); cancelar o derruba.
+ */
+function PendingInvitation({ invitation }: { invitation: BoardInvitation }) {
+    return (
+        <div className="flex items-center gap-2.5 rounded-lg px-1 py-1.5">
+            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-surface-3 text-muted-fg">
+                <Mail className="size-3.5" />
+            </span>
+
+            <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium" title={invitation.email}>
+                    {invitation.email}
+                </p>
+                <p className="truncate text-[11px] text-muted-fg">
+                    {invitation.role === 'admin' ? 'Admin' : 'Membro'} · expira <TimeAgo iso={invitation.expires_at} />
+                </p>
+            </div>
+
+            <button
+                type="button"
+                title="Reenviar convite"
+                aria-label={`Reenviar convite para ${invitation.email}`}
+                onClick={() => void runAction(resendBoardInvitation({ invitationId: invitation.id }))}
+                className="rounded-md p-1 text-muted-fg transition-colors hover:bg-surface-2 hover:text-foreground"
+            >
+                <RotateCw className="size-3.5" />
+            </button>
+
+            <button
+                type="button"
+                title="Cancelar convite"
+                aria-label={`Cancelar convite de ${invitation.email}`}
+                onClick={() => void runAction(revokeBoardInvitation({ invitationId: invitation.id }))}
+                className="rounded-md p-1 text-muted-fg transition-colors hover:bg-danger/10 hover:text-danger"
+            >
+                <X className="size-3.5" />
+            </button>
+        </div>
     );
 }

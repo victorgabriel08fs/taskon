@@ -182,8 +182,31 @@ export interface Board {
     /** Quantos cards estão na gaveta — inclui os arquivados na mão. */
     archived_count: number;
     members: User[];
+    /** Convites ainda não aceitos. Só vem preenchido para quem administra o quadro. */
+    invitations: BoardInvitation[];
     labels: Label[];
     lists: BoardList[];
+}
+
+/** Convite por e-mail para quem ainda não tem conta (ver src/server/services/invitations.ts). */
+export interface BoardInvitation {
+    id: number;
+    email: string;
+    role: 'admin' | 'member';
+    /** Nome de quem convidou, ou null se a conta dela não existe mais. */
+    invited_by: string | null;
+    created_at: string;
+    expires_at: string;
+}
+
+/** O convite como a página /invite/[token] o mostra para quem o recebeu. */
+export interface InvitationPreview {
+    board_title: string;
+    board_background: BoardBackground;
+    email: string;
+    role: 'admin' | 'member';
+    invited_by: string | null;
+    expires_at: string;
 }
 
 export interface BoardSummary {

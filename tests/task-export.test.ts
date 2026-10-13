@@ -49,6 +49,7 @@ function board(cards: Card[]): Board {
         auto_archive_days: null,
         archived_count: 0,
         members: [],
+        invitations: [],
         labels: [],
         lists: [list],
     };

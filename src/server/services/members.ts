@@ -6,21 +6,28 @@ import { boardUser, users, type UserRow } from '@/server/db/schema';
 import { HttpError, abort, invalid } from '@/server/errors';
 import { authorizeBoard } from '@/server/policies/board';
 import { logActivity } from '@/server/services/activity';
+import { dropInvitation, inviteByEmail } from '@/server/services/invitations';
 
 /**
  * Membros do quadro — o antigo `BoardMemberController`. Convidar e remover
  * são configurações do quadro: só owner/admin (`manage`).
  */
 
+export type AddMemberResult =
+    | { kind: 'added'; member: Pick<UserRow, 'id' | 'name'> }
+    | { kind: 'invited'; email: string };
+
 /**
- * Põe uma conta existente no quadro. Devolve quem entrou (para o aviso).
- * Não há convite por e-mail para quem ainda não tem conta.
+ * Convida alguém para o quadro pelo e-mail. Quem já tem conta entra na hora;
+ * quem não tem recebe um convite por e-mail (src/server/services/invitations.ts)
+ * e entra quando aceitar. Devolve o que aconteceu, para o aviso.
  */
 export async function addBoardMember(
     actor: Pick<UserRow, 'id'>,
     boardId: number,
     input: { email: string; role: 'admin' | 'member' },
-): Promise<Pick<UserRow, 'id' | 'name'>> {
+    now = new Date(),
+): Promise<AddMemberResult> {
     const { board } = await authorizeBoard(actor, boardId, 'manage');
 
     // Os e-mails são gravados em minúsculas, e o Postgres compara com caixa.
@@ -32,7 +39,7 @@ export async function addBoardMember(
         .where(eq(users.email, email))
         .limit(1);
 
-    if (!member) invalid('email', 'Nenhuma conta com esse e-mail. Peça para a pessoa se cadastrar primeiro.');
+    if (!member) return { kind: 'invited', ...(await inviteByEmail(actor, board, { email, role: input.role }, now)) };
 
     await db.transaction(async (tx) => {
         // Quem decide se a pessoa já participa é o índice único (board_id,
@@ -46,13 +53,17 @@ export async function addBoardMember(
 
         if (inserted.length === 0) invalid('email', 'Essa pessoa já participa do quadro.');
 
+        // Se ela tinha um convite pendente (criou a conta sem usar o link),
+        // ele perdeu o sentido.
+        await dropInvitation(board.id, email, tx);
+
         await logActivity(
             { boardId: board.id, userId: actor.id, type: 'member.added', description: `adicionou ${member.name} ao quadro` },
             tx,
         );
     });
 
-    return member;
+    return { kind: 'added', member };
 }
 
 /**

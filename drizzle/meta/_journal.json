@@ -15,6 +15,13 @@
       "when": 1791837465177,
       "tag": "0001_fk_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791890055303,
+      "tag": "0002_board_invitations",
+      "breakpoints": true
     }
   ]
 }

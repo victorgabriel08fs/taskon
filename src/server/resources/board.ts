@@ -1,6 +1,17 @@
 import 'server-only';
 
-import type { Board, BoardBackground, BoardList, BoardRole, BoardSummary, Card, ColorKey, Label, User } from '@/types';
+import type {
+    Board,
+    BoardBackground,
+    BoardInvitation,
+    BoardList,
+    BoardRole,
+    BoardSummary,
+    Card,
+    ColorKey,
+    Label,
+    User,
+} from '@/types';
 import { toAppIso } from '@/lib/timezone';
 import type { BoardListRow, BoardRow, CardRow } from '@/server/db/schema';
 
@@ -105,6 +116,8 @@ export interface BoardResourceData {
      */
     archivedCount: number;
     members: User[];
+    /** Convites pendentes — vazio para quem não administra o quadro. */
+    invitations: BoardInvitation[];
     labels: Label[];
     lists: BoardList[];
 }
@@ -124,6 +137,7 @@ export function boardResource(board: BoardSource, data: BoardResourceData): Boar
         archived_count: data.archivedCount,
         can: { manage: data.can.manage, delete: data.can.delete },
         members: data.members,
+        invitations: data.invitations,
         labels: data.labels,
         lists: data.lists,
     };

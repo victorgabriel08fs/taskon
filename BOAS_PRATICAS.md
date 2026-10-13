@@ -1026,11 +1026,12 @@ pelo mesmo motivo.
   | Login, por e-mail + IP | 5 erros bloqueiam até a janela fechar; acertar zera |
   | Cadastro, por IP | 10 por minuto |
   | "Esqueci a senha" | 6 por minuto por IP; um link a cada 60 s por e-mail |
+  | Convite por e-mail | 20 por hora por pessoa que convida |
   | Troca de senha | 6 por minuto por pessoa |
   | Resumo de teste | 3 por minuto por pessoa |
 
-  As janelas vencidas (e as sessões vencidas) são apagadas pelo cron noturno de
-  arquivamento.
+  As janelas vencidas (e as sessões e os convites vencidos) são apagadas pelo
+  cron noturno de arquivamento.
 - **O `?next=` não vira redirecionamento aberto**
   ([`safeRedirectPath`](src/server/auth/session.ts)). Checar o prefixo ("começa
   com `/` e não com `//`") não basta, porque o navegador limpa a URL antes de
@@ -1041,6 +1042,16 @@ pelo mesmo motivo.
   também resolve para `//evil.com`) e decide sobre o resultado normalizado, que
   é o que ela devolve. Coberto em
   [`tests/regressions/auth-redirect.test.ts`](tests/regressions/auth-redirect.test.ts).
+- **Convite é credencial** ([`invitations.ts`](src/server/services/invitations.ts)).
+  O link `/invite/<token>` leva 32 bytes aleatórios; o banco guarda só o SHA-256
+  (como sessões e redefinição de senha), o convite vale 7 dias e uma vez só —
+  aceitar APAGA a linha antes de inserir a pessoa, então dois cliques não entram
+  duas vezes. E o convite **não** é aceito sozinho quando alguém se cadastra com o
+  e-mail convidado: o app não verifica e-mail, e qualquer um criaria a conta com
+  o endereço de outra pessoa para herdar os quadros dela. Sem o link, não entra.
+  Convidar também manda e-mail para um endereço digitado por alguém — daí o teto
+  por hora, e o envio dentro da transação: se o e-mail não sai, nenhum convite
+  fica pendente (nem o link de um reenvio anterior é invalidado).
 - **CSRF**: Server Action só aceita POST, e o Next compara o `Origin` com o
   `Host` (ou `X-Forwarded-Host`), recusando o que não bate. O cookie de sessão
   `SameSite=Lax` também não vai em POST vindo de outro site. Atrás de um proxy

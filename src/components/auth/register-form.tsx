@@ -10,11 +10,27 @@ import { register } from '@/server/actions/auth';
 /** O foco já vai para o nome, no commit, como o `autoFocus` faria (ver login-form.tsx). */
 const focusOnMount = (node: HTMLInputElement | null) => node?.focus();
 
-export function RegisterForm() {
-    const form = useActionForm({ name: '', email: '', password: '', password_confirmation: '' }, register);
+/** O convite que trouxe a pessoa até aqui (/register?invite=…), se ainda vale. */
+export interface RegisterInvite {
+    token: string;
+    email: string;
+    boardTitle: string;
+}
+
+export function RegisterForm({ invite }: { invite: RegisterInvite | null }) {
+    const form = useActionForm(
+        { name: '', email: invite?.email ?? '', password: '', password_confirmation: '', invite: invite?.token ?? null },
+        register,
+    );
 
     return (
         <>
+            {invite && (
+                <div role="status" className="mb-5 rounded-lg bg-primary-soft px-3.5 py-2.5 text-sm text-foreground">
+                    Crie sua conta para entrar no quadro <span className="font-semibold">{invite.boardTitle}</span>.
+                </div>
+            )}
+
             <form
                 onSubmit={(event) => {
                     event.preventDefault();
@@ -74,7 +90,11 @@ export function RegisterForm() {
 
             <p className="mt-8 text-center text-sm text-muted-fg">
                 Já tem conta?{' '}
-                <Link href="/login" className="font-semibold text-primary underline-offset-4 hover:underline">
+                <Link
+                    // Com convite, o login volta para a página do convite, que aceita com um clique.
+                    href={invite ? `/login?next=${encodeURIComponent(`/invite/${invite.token}`)}` : '/login'}
+                    className="font-semibold text-primary underline-offset-4 hover:underline"
+                >
                     Entrar
                 </Link>
             </p>

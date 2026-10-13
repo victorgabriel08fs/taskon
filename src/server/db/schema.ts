@@ -167,6 +167,40 @@ export const boardUser = pgTable(
     ],
 );
 
+/**
+ * Convite para quem ainda NÃO tem conta. Quem já tem entra direto no quadro;
+ * para o resto, o convite guarda o e-mail, o papel e o SHA-256 do token que
+ * vai no link do e-mail — como as sessões e a redefinição de senha, o banco
+ * nunca guarda o token cru.
+ *
+ * Um convite pendente por e-mail em cada quadro: convidar de novo reaproveita
+ * a linha (token e prazo novos). Aceito, ele é apagado — o registro do que
+ * aconteceu fica na linha de board_user e no histórico do quadro.
+ */
+export const boardInvitations = pgTable(
+    'board_invitations',
+    {
+        id: id(),
+        boardId: integer('board_id')
+            .notNull()
+            .references(() => boards.id, { onDelete: 'cascade' }),
+        email: varchar('email', { length: 255 }).notNull(),
+
+        // admin | member — o papel com que a pessoa entra.
+        role: varchar('role', { length: 20 }).notNull().default('member'),
+        token: varchar('token', { length: 64 }).notNull(),
+        invitedBy: integer('invited_by').references(() => users.id, { onDelete: 'set null' }),
+        expiresAt: tz('expires_at').notNull(),
+        ...timestamps,
+    },
+    (table) => [
+        uniqueIndex('board_invitations_board_id_email_unique').on(table.boardId, table.email),
+        uniqueIndex('board_invitations_token_unique').on(table.token),
+        index('board_invitations_invited_by_index').on(table.invitedBy),
+        index('board_invitations_expires_at_index').on(table.expiresAt),
+    ],
+);
+
 export const boardLists = pgTable(
     'board_lists',
     {
@@ -374,11 +408,17 @@ export const boardsRelations = relations(boards, ({ one, many }) => ({
     cards: many(cards),
     labels: many(labels),
     activities: many(activities),
+    invitations: many(boardInvitations),
 }));
 
 export const boardUserRelations = relations(boardUser, ({ one }) => ({
     board: one(boards, { fields: [boardUser.boardId], references: [boards.id] }),
     user: one(users, { fields: [boardUser.userId], references: [users.id] }),
+}));
+
+export const boardInvitationsRelations = relations(boardInvitations, ({ one }) => ({
+    board: one(boards, { fields: [boardInvitations.boardId], references: [boards.id] }),
+    inviter: one(users, { fields: [boardInvitations.invitedBy], references: [users.id] }),
 }));
 
 export const boardListsRelations = relations(boardLists, ({ one, many }) => ({
@@ -442,3 +482,4 @@ export type ChecklistRow = typeof checklists.$inferSelect;
 export type ChecklistItemRow = typeof checklistItems.$inferSelect;
 export type ActivityRow = typeof activities.$inferSelect;
 export type SessionRow = typeof sessions.$inferSelect;
+export type BoardInvitationRow = typeof boardInvitations.$inferSelect;

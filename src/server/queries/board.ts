@@ -22,6 +22,7 @@ import {
 import { abortUnless } from '@/server/errors';
 import { authorizeBoard, boardCan } from '@/server/policies/board';
 import { activityResource, labelResource, userResource } from '@/server/resources/common';
+import { pendingInvitations } from '@/server/services/invitations';
 import { boardListResource, boardResource, cardResource } from '@/server/resources/board';
 import { MAX_ID } from '@/server/validation';
 
@@ -129,6 +130,7 @@ export async function loadBoardPage(user: Pick<UserRow, 'id'>, boardId: number):
     assertBoardId(boardId);
 
     const { board, role } = await authorizeBoard(user, boardId, 'view');
+    const can = boardCan(role, board, user.id);
 
     // Cards das colunas vivas: o que o Eloquent carregava via lists → cards.
     const liveLists = db
@@ -138,7 +140,7 @@ export async function loadBoardPage(user: Pick<UserRow, 'id'>, boardId: number):
     const liveCards = and(inArray(cards.boardListId, liveLists), isNull(cards.archivedAt));
 
     // Consultas independentes entre si: vão juntas, em vez de uma esperando a outra.
-    const [memberships, labelRows, listRows, cardRows, labelLinks, memberLinks, archivedCount] = await Promise.all([
+    const [memberships, labelRows, listRows, cardRows, labelLinks, memberLinks, archivedCount, invitations] = await Promise.all([
         loadBoardMemberships([board.id]),
         db
             .select({ id: labels.id, name: labels.name, color: labels.color })
@@ -194,6 +196,9 @@ export async function loadBoardPage(user: Pick<UserRow, 'id'>, boardId: number):
         // Só o número — o selo da entrada "Arquivados" no menu do quadro; a
         // lista em si só é lida quando alguém abre a gaveta.
         db.$count(cards, and(eq(cards.boardId, board.id), isNotNull(cards.archivedAt))),
+
+        // Convites pendentes: só quem administra o quadro vê (e cancela).
+        can.manage ? pendingInvitations(board.id) : Promise.resolve([]),
     ]);
 
     await db
@@ -217,9 +222,10 @@ export async function loadBoardPage(user: Pick<UserRow, 'id'>, boardId: number):
         board: boardResource(board, {
             role,
             isFavorite: members.find((member) => member.user.id === user.id)?.isFavorite ?? false,
-            can: boardCan(role, board, user.id),
+            can,
             archivedCount,
             members: memberResources(members),
+            invitations,
             labels: labelRows.map(labelResource),
             lists: listRows.map((list) =>
                 boardListResource(

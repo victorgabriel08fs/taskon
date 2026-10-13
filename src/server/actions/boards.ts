@@ -85,9 +85,15 @@ export const addBoardMember = defineAction(
         role: oneOf(['admin', 'member']),
     }),
     async ({ boardId, ...input }, { user }) => {
-        const member = await memberService.addBoardMember(user, boardId, input);
+        const result = await memberService.addBoardMember(user, boardId, input);
 
-        return ok(null, toast('success', `${member.name} entrou no quadro.`));
+        // Quem já tem conta entra na hora; quem não tem recebe o convite por e-mail.
+        return ok(
+            null,
+            result.kind === 'added'
+                ? toast('success', `${result.member.name} entrou no quadro.`)
+                : toast('success', `Convite enviado para ${result.email}.`),
+        );
     },
 ) satisfies BoardActions['addBoardMember'];
 

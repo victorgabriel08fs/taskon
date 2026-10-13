@@ -38,7 +38,14 @@ export interface AuthActions {
     /** Guest. 5 tentativas por e-mail+IP; erro em `email`. redirect → `next` seguro ou /dashboard. */
     login: Action<{ email: string; password: string; remember: boolean; next?: string | null }>;
     /** Guest. Cria a conta + quadro de exemplo, loga. redirect → /dashboard. */
-    register: Action<{ name: string; email: string; password: string; password_confirmation: string }>;
+    register: Action<{
+        name: string;
+        email: string;
+        password: string;
+        password_confirmation: string;
+        /** Token de convite (/register?invite=…): aceito logo depois de criar a conta. */
+        invite?: string | null;
+    }>;
     /** Guest. Devolve a mensagem de status para a tela ("Enviamos o link…"). Erro em `email`. */
     sendPasswordResetLink: Action<{ email: string }, { status: string }>;
     /** Guest. Troca a senha pelo token. redirect → /login (flash). Erro em `email`/`password`. */
@@ -88,10 +95,26 @@ export interface BoardActions {
     deleteBoard: Action<{ boardId: number }>;
     /** view. Favorito é por pessoa. */
     toggleFavorite: Action<{ boardId: number }>;
-    /** manage. Erros em `email`. */
+    /**
+     * manage. Conta existente entra na hora; sem conta, recebe convite por
+     * e-mail (ver InvitationActions). Erros em `email`.
+     */
     addBoardMember: Action<{ boardId: number; email: string; role: 'admin' | 'member' }>;
     /** manage. O dono não sai (erro em toast). */
     removeBoardMember: Action<{ boardId: number; userId: number }>;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Convites (src/server/actions/invitations.ts)                                */
+/* -------------------------------------------------------------------------- */
+
+export interface InvitationActions {
+    /** manage. Token e prazo novos; o link anterior para de valer. */
+    resendBoardInvitation: Action<{ invitationId: number }>;
+    /** manage. O link para de valer na hora. */
+    revokeBoardInvitation: Action<{ invitationId: number }>;
+    /** Qualquer pessoa logada com o link. redirect → /boards/{id} (flash). */
+    acceptBoardInvitation: Action<{ token: string }>;
 }
 
 /* -------------------------------------------------------------------------- */
