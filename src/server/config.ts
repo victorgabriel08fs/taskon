@@ -119,6 +119,34 @@ export const config = {
         bcryptRounds: Math.min(14, Math.max(10, Number.parseInt(env('BCRYPT_ROUNDS') ?? '12', 10) || 12)),
     },
 
+    /**
+     * Administração do Taskon (/admin).
+     *
+     * O admin NATIVO é a conta cujo e-mail está nesta lista — e só depois de
+     * ela provar que o e-mail é dela (link de confirmação ou redefinição de
+     * senha concluída). Sem essa prova, como o app não verifica e-mail no
+     * cadastro, qualquer um poderia criar uma conta com o endereço e virar
+     * admin: a lista está no código, e o repositório é público.
+     *
+     * `NATIVE_ADMIN_EMAILS` (separados por vírgula) troca a lista sem mexer
+     * no código — útil no desenvolvimento, com as contas do seed.
+     */
+    admin: {
+        nativeEmails: (env('NATIVE_ADMIN_EMAILS') ?? 'victorgabriel08fs@gmail.com')
+            .split(',')
+            .map((email) => email.trim().toLowerCase())
+            .filter(Boolean),
+
+        /** Pessoas por página na lista do painel. */
+        usersPerPage: 25,
+
+        /** Linhas do histórico de administração mostradas no painel. */
+        eventsShown: 20,
+
+        /** Validade do link de confirmação de e-mail. */
+        emailVerificationMinutes: 24 * 60,
+    },
+
     /** Convites por e-mail para quem ainda não tem conta. */
     invitations: {
         /** Quantos dias o link do convite vale. Convidar de novo renova o prazo. */

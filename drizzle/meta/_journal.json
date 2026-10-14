@@ -22,6 +22,13 @@
       "when": 1791890055303,
       "tag": "0002_board_invitations",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792016767657,
+      "tag": "0003_admin_panel",
+      "breakpoints": true
     }
   ]
 }

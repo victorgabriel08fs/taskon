@@ -4,6 +4,7 @@ import type { Activity, AuthUser, AvatarColor, BoardBackground, BoardRole, Color
 import { initialsOf } from '@/lib/initials';
 import { toAppIso } from '@/lib/timezone';
 import type { ActivityRow, LabelRow, UserRow } from '@/server/db/schema';
+import { adminAccess } from '@/server/policies/admin';
 
 /**
  * Resources: o contrato de saída. Cada função devolve EXATAMENTE o formato do
@@ -40,6 +41,7 @@ export function authUserResource(user: UserRow): AuthUser {
         avatar_color: user.avatarColor as AvatarColor,
         title: user.title,
         email_verified_at: toAppIso(user.emailVerifiedAt),
+        admin: adminAccess(user),
     };
 }
 

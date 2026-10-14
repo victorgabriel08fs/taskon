@@ -299,6 +299,80 @@ export interface AuthUser {
     avatar_color: AvatarColor;
     title: string | null;
     email_verified_at: string | null;
+    /** Acesso à administração do Taskon (o painel /admin). */
+    admin: AdminAccess;
+}
+
+/**
+ * Quanto a pessoa manda na administração do Taskon — NÃO é o papel dela num
+ * quadro (BoardRole):
+ *  - 'native'  → admin nativo (e-mail da lista, já confirmado): tudo, e ninguém mexe nele;
+ *  - 'admin'   → admin concedido: bloqueia e desbloqueia contas comuns;
+ *  - 'pending' → e-mail da lista ainda não confirmado: o painel só oferece a confirmação;
+ *  - null      → conta comum.
+ */
+export type AdminAccess = 'native' | 'admin' | 'pending' | null;
+
+/* -------------------------------------------------------------------------- */
+/* Administração                                                               */
+/* -------------------------------------------------------------------------- */
+
+export type AdminFilter = 'all' | 'admins' | 'blocked';
+
+/** Uma conta na lista do painel de administração. */
+export interface AdminUserRow {
+    id: number;
+    name: string;
+    email: string;
+    initials: string;
+    avatar_color: AvatarColor;
+    created_at: string;
+    /** Última atividade numa sessão ainda guardada, ou null. */
+    last_seen_at: string | null;
+    boards_count: number;
+    email_verified: boolean;
+    /** 'native_pending' = e-mail da lista de admins nativos, ainda não confirmado. */
+    role: 'native' | 'native_pending' | 'admin' | 'user';
+    blocked_at: string | null;
+    /** Nome de quem bloqueou (null se a conta dessa pessoa não existe mais). */
+    blocked_by: string | null;
+    /** O que QUEM ESTÁ VENDO pode fazer com esta conta — o servidor confere de novo. */
+    can: { grant_admin: boolean; revoke_admin: boolean; block: boolean; unblock: boolean };
+}
+
+export interface AdminEvent {
+    id: number;
+    type: 'admin.granted' | 'admin.revoked' | 'user.blocked' | 'user.unblocked' | 'admin.activated';
+    /** Quem fez (null se a conta não existe mais). */
+    actor: string | null;
+    target_name: string;
+    target_email: string;
+    created_at: string;
+}
+
+export interface AdminStats {
+    users: number;
+    /** Admins ativos: nativos confirmados + concedidos (sem contar bloqueados). */
+    admins: number;
+    blocked: number;
+    new_this_week: number;
+    boards: number;
+    cards: number;
+}
+
+export interface AdminPanelData {
+    viewer: { access: 'native' | 'admin' };
+    stats: AdminStats;
+    users: AdminUserRow[];
+    pagination: { page: number; per_page: number; total: number; pages: number };
+    filters: { q: string; filter: AdminFilter };
+    events: AdminEvent[];
+}
+
+/** O que a página /verify-email/[token] mostra antes de confirmar. */
+export interface EmailVerificationPreview {
+    email: string;
+    name: string;
 }
 
 export interface Toast {

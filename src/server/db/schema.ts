@@ -17,6 +17,7 @@ import { relations } from 'drizzle-orm';
 import {
     boolean,
     doublePrecision,
+    type AnyPgColumn,
     index,
     integer,
     jsonb,
@@ -71,11 +72,75 @@ export const users = pgTable(
 
         // Carimbo do último envio BEM-SUCEDIDO — a trava contra o envio duplo.
         digestLastSentAt: tz('digest_last_sent_at'),
+
+        // Preenchido quando a pessoa PROVA que o e-mail é dela: o link de
+        // confirmação ou uma redefinição de senha concluída. É o que ativa o
+        // admin nativo (ver src/server/policies/admin.ts) — e volta a null
+        // quando o e-mail muda.
         emailVerifiedAt: tz('email_verified_at'),
         password: varchar('password', { length: 255 }).notNull(),
+
+        // Administração do Taskon (o painel /admin) — NÃO confundir com o papel
+        // "admin" de um quadro (board_user.role). O admin nativo não depende
+        // desta coluna: ele vem do e-mail (config.admin.nativeEmails).
+        isAdmin: boolean('is_admin').notNull().default(false),
+
+        // Conta bloqueada por um administrador: não entra e perde as sessões.
+        blockedAt: tz('blocked_at'),
+        blockedBy: integer('blocked_by').references((): AnyPgColumn => users.id, { onDelete: 'set null' }),
         ...timestamps,
     },
-    (table) => [uniqueIndex('users_email_unique').on(table.email)],
+    (table) => [
+        uniqueIndex('users_email_unique').on(table.email),
+        index('users_blocked_by_index').on(table.blockedBy),
+    ],
+);
+
+/**
+ * O pedido de confirmação de e-mail em aberto de cada pessoa (um por vez:
+ * pedir de novo troca o token). Como nas sessões e na redefinição de senha,
+ * o banco guarda só o SHA-256 do token que vai no link. O e-mail fica junto
+ * para o link morrer se a pessoa trocar de endereço antes de clicar.
+ */
+export const emailVerifications = pgTable('email_verifications', {
+    userId: integer('user_id')
+        .primaryKey()
+        .references(() => users.id, { onDelete: 'cascade' }),
+    email: varchar('email', { length: 255 }).notNull(),
+    token: varchar('token', { length: 64 }).notNull(),
+    createdAt: tz('created_at')
+        .notNull()
+        .defaultNow()
+        .$defaultFn(() => new Date()),
+});
+
+/**
+ * O histórico da administração: quem concedeu ou tirou admin, quem bloqueou
+ * ou desbloqueou quem. Ações de poder sobre outras contas precisam deixar
+ * rastro. O nome/e-mail do alvo vai copiado para a linha continuar legível
+ * mesmo se a conta for excluída depois.
+ */
+export const adminEvents = pgTable(
+    'admin_events',
+    {
+        id: id(),
+        actorId: integer('actor_id').references(() => users.id, { onDelete: 'set null' }),
+        targetId: integer('target_id').references(() => users.id, { onDelete: 'set null' }),
+        targetName: varchar('target_name', { length: 255 }).notNull(),
+        targetEmail: varchar('target_email', { length: 255 }).notNull(),
+
+        // admin.granted | admin.revoked | user.blocked | user.unblocked | admin.activated
+        type: varchar('type', { length: 40 }).notNull(),
+        createdAt: tz('created_at')
+            .notNull()
+            .defaultNow()
+            .$defaultFn(() => new Date()),
+    },
+    (table) => [
+        index('admin_events_created_at_index').on(table.createdAt),
+        index('admin_events_actor_id_index').on(table.actorId),
+        index('admin_events_target_id_index').on(table.targetId),
+    ],
 );
 
 /**
@@ -483,3 +548,4 @@ export type ChecklistItemRow = typeof checklistItems.$inferSelect;
 export type ActivityRow = typeof activities.$inferSelect;
 export type SessionRow = typeof sessions.$inferSelect;
 export type BoardInvitationRow = typeof boardInvitations.$inferSelect;
+export type AdminEventRow = typeof adminEvents.$inferSelect;

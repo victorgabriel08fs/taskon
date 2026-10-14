@@ -197,3 +197,37 @@ export interface CardContentActions {
     /** manage. */
     deleteLabel: Action<{ labelId: number }>;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Administração (src/server/actions/admin.ts)                                 */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Toda action aqui exige acesso de admin ATIVO (src/server/policies/admin.ts)
+ * e confere a hierarquia de novo no servidor: 403 com toast quando a regra não
+ * deixa. Todas re-renderizam a página (refresh) no sucesso.
+ */
+export interface AdminActions {
+    /** Só o admin nativo. */
+    grantAdmin: Action<{ userId: number }>;
+    /** Só o admin nativo. */
+    revokeAdmin: Action<{ userId: number }>;
+    /** Derruba todas as sessões da conta na hora. */
+    blockUser: Action<{ userId: number }>;
+    unblockUser: Action<{ userId: number }>;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Confirmação de e-mail (src/server/actions/email-verification.ts)            */
+/* -------------------------------------------------------------------------- */
+
+export interface EmailVerificationActions {
+    /** Logado. Manda o link de confirmação para o e-mail da conta (throttle). */
+    requestEmailVerification: NoInput;
+    /**
+     * Qualquer um com o link (o token prova a caixa de entrada). redirect →
+     * /admin se a conta virou admin nativo, /dashboard se há sessão, /login
+     * sem sessão — com aviso (flash).
+     */
+    confirmEmail: Action<{ token: string }>;
+}
