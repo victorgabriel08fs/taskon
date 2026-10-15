@@ -1,6 +1,6 @@
 'use client';
 
-import { ChartNoAxesColumn, LayoutDashboard, LogOut, Settings, SquareKanban, UserRound } from 'lucide-react';
+import { ChartNoAxesColumn, LayoutDashboard, LogOut, Settings, ShieldCheck, SquareKanban, UserRound } from 'lucide-react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -121,6 +121,18 @@ export function AppLayout({ children, overlay = false, headerSlot, className }: 
                                     <Link href="/settings/appearance" className="block">
                                         <PopoverItem icon={<Settings className="size-4" />}>Preferências</PopoverItem>
                                     </Link>
+
+                                    {/* Só para quem administra o Taskon — inclusive o nativo
+                                        que ainda não confirmou o e-mail: é no /admin que ele
+                                        pede o link que liga o painel. Para os outros, /admin
+                                        é 404, e o item nem aparece. */}
+                                    {user.admin !== null && (
+                                        <Link href="/admin" className="block">
+                                            <PopoverItem icon={<ShieldCheck className="size-4" />}>
+                                                Administração
+                                            </PopoverItem>
+                                        </Link>
+                                    )}
 
                                     <div className="my-1.5 h-px bg-border" />
 

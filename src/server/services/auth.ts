@@ -11,6 +11,7 @@ import { HttpError, invalid } from '@/server/errors';
 import { sendMail } from '@/server/mail/mailer';
 import { passwordResetMail } from '@/server/mail/password-reset';
 import { buildDemoBoard } from '@/server/services/demo-board';
+import { markEmailVerified } from '@/server/services/email-verification';
 
 /**
  * Entrar, criar conta e recuperar a senha — o que no Laravel era o
@@ -24,6 +25,7 @@ import { buildDemoBoard } from '@/server/services/demo-board';
 
 export const AUTH_MESSAGES = {
     failed: 'Essas credenciais não batem com nossos registros.',
+    blocked: 'Esta conta foi bloqueada por um administrador do Taskon.',
     emailTaken: 'Esse e-mail já está em uso.',
     unknownEmail: 'Não encontramos uma conta com esse e-mail.',
     resetLinkSent: 'Enviamos por e-mail o link para redefinir sua senha.',
@@ -105,6 +107,9 @@ async function findUserByEmail(email: string): Promise<UserRow | undefined> {
  *    `throttle:10,1` da rota) → 429;
  *  - por e-mail+IP, 5 erros seguidos bloqueiam até a janela fechar → erro no
  *    campo `email`. Acertar a senha zera o contador.
+ *
+ * E a conta bloqueada por um administrador (src/server/services/admin.ts) não
+ * entra — mas só ouve isso depois de acertar a senha.
  */
 export async function authenticate(credentials: { email: string; password: string }, ip: string | null): Promise<UserRow> {
     await throttle(`login:${ipKey(ip)}`, 10, 1);
@@ -130,6 +135,11 @@ export async function authenticate(credentials: { email: string; password: strin
     }
 
     await clear(key);
+
+    // O bloqueio só aparece DEPOIS da senha certa. Antes dela a resposta é a
+    // de sempre (e o erro conta no limite): o login não pode virar um jeito de
+    // descobrir, sem a senha, quais contas existem ou foram bloqueadas.
+    if (user.blockedAt) invalid('email', AUTH_MESSAGES.blocked);
 
     return user;
 }
@@ -265,6 +275,9 @@ export async function sendPasswordResetLink(
  * O token vale `passwordResetMinutes` e uma vez só. Junto com a senha caem
  * TODAS as sessões abertas da pessoa (o `remember_token` novo do Laravel):
  * quem pede o link pode estar fazendo isso justamente por ter sido invadido.
+ *
+ * Conta bloqueada também redefine (a tela não revela o bloqueio a quem só
+ * sabe o e-mail) — e o login continua recusando depois.
  */
 export async function resetPassword(
     input: { token: string; email: string; password: string },
@@ -289,6 +302,12 @@ export async function resetPassword(
     const password = await hashPassword(input.password);
 
     return db.transaction(async (tx) => {
+        // Concluir a redefinição prova que a caixa de entrada é da pessoa — o
+        // link só chegou lá. O e-mail fica confirmado (e, se for o de um admin
+        // nativo, a administração é ativada). Vem antes da troca da senha para
+        // a linha devolvida já sair com a confirmação.
+        await markEmailVerified(tx, user, now);
+
         const [updated] = await tx.update(users).set({ password }).where(eq(users.id, user.id)).returning();
 
         await tx.delete(passwordResetTokens).where(eq(passwordResetTokens.email, user.email));

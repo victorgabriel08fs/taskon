@@ -12,7 +12,7 @@ import { NextResponse, type NextRequest } from 'next/server';
  */
 const SESSION_COOKIE = 'taskon_session';
 
-const PROTECTED = ['/dashboard', '/boards', '/settings'];
+const PROTECTED = ['/dashboard', '/boards', '/settings', '/admin'];
 
 const isProtected = (pathname: string) =>
     PROTECTED.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));

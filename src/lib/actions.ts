@@ -51,6 +51,14 @@ export function showToast(payload: Toast | undefined): void {
 export interface RunOptions<T> {
     onSuccess?: (data: T) => void;
     onError?: (result: Extract<ActionResult<T>, { ok: false }>) => void;
+    /**
+     * A action não respondeu: rede fora, ou um deploy novo no meio do caminho
+     * (a action da página aberta já não existe). Nada foi salvo e o aviso já
+     * saiu; aqui quem chama devolve a tela ao ponto de tentar de novo. O
+     * redirect também rejeita a Promise, mas é sucesso e não passa por aqui —
+     * é o que separa os dois casos para quem não pode usar o `onFinish`.
+     */
+    onNetworkError?: () => void;
     onFinish?: () => void;
     /**
      * `false` dispensa a barra de progresso — o `showProgress: false` do
@@ -97,6 +105,7 @@ export async function runAction<T>(
         // Deploy novo (action que não existe mais) ou rede fora: nada foi salvo.
         console.error(error);
         toast.error(NETWORK_ERROR);
+        options.onNetworkError?.();
 
         return null;
     } finally {
@@ -200,6 +209,7 @@ export function useActionForm<TData extends Record<string, unknown>, TResult = n
                     setErrors(result.errors ?? {});
                     options.onError?.(result);
                 },
+                onNetworkError: options.onNetworkError,
                 onFinish: () => {
                     setProcessing(false);
                     options.onFinish?.();

@@ -17,6 +17,12 @@
   por quadro, próximos vencimentos e feed de atividade.
 - **Quadros** com 8 fundos em gradiente, favoritos e membros com papéis
   (dono / admin / membro).
+- **Painel de administração** (`/admin`): contas, estatísticas e histórico. O
+  admin nativo (`victorgabriel08fs@gmail.com`) concede e tira admin e bloqueia
+  contas — conta bloqueada não entra e perde as sessões abertas na hora. Admins
+  concedidos bloqueiam e desbloqueiam contas comuns. O nativo só se ativa depois
+  de confirmar o e-mail (o repositório é público: sem essa prova, qualquer um
+  criaria a conta com o endereço).
 - **Convites por e-mail**: quem já tem conta entra no quadro na hora; quem
   ainda não tem recebe um link que vale 7 dias, cria a conta por ele e já cai
   dentro do quadro. Os convites pendentes aparecem na lista de membros, com

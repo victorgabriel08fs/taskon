@@ -17,11 +17,14 @@ import { MAX_ID } from '@/server/validation';
  *
  * As regras, na ordem em que o disparo as aplica a cada pessoa:
  *
- *  1. só quem deixou o resumo ligado (`--force` ignora o opt-out);
- *  2. quem já recebeu HOJE (no fuso do app) é pulado — o carimbo
+ *  1. conta bloqueada por um administrador nunca recebe — nem com `--force`,
+ *     nem escolhida por `--user`: ela não entra no app, e o resumo seria um
+ *     canal aberto com quem foi posto para fora (com links que não abrem);
+ *  2. só quem deixou o resumo ligado (`--force` ignora o opt-out);
+ *  3. quem já recebeu HOJE (no fuso do app) é pulado — o carimbo
  *     `digest_last_sent_at` é a trava contra o envio duplo;
- *  3. resumo vazio não sai (`config.digest.skipWhenEmpty`);
- *  4. falha de um endereço não derruba o lote: conta, registra no log e segue,
+ *  4. resumo vazio não sai (`config.digest.skipWhenEmpty`);
+ *  5. falha de um endereço não derruba o lote: conta, registra no log e segue,
  *     sem carimbar — a próxima rodada tenta de novo.
  */
 
@@ -124,7 +127,11 @@ export function digestOptionsFromArgs(args: readonly string[]): Pick<DailyDigest
 
 type Recipient = Pick<UserRow, 'id' | 'name' | 'email' | 'digestLastSentAt'>;
 
-/** Os destinatários em ordem de id, cem por consulta (sem carregar a base inteira na memória). */
+/**
+ * Os destinatários em ordem de id, cem por consulta (sem carregar a base
+ * inteira na memória). O filtro do bloqueio fica fora do `force` de propósito
+ * (regra 1).
+ */
 async function* recipients(force: boolean, only: SQL | undefined): AsyncGenerator<Recipient> {
     let lastId = 0;
 
@@ -132,7 +139,14 @@ async function* recipients(force: boolean, only: SQL | undefined): AsyncGenerato
         const batch = await db
             .select({ id: users.id, name: users.name, email: users.email, digestLastSentAt: users.digestLastSentAt })
             .from(users)
-            .where(and(gt(users.id, lastId), force ? undefined : eq(users.dailyDigest, true), only))
+            .where(
+                and(
+                    gt(users.id, lastId),
+                    isNull(users.blockedAt),
+                    force ? undefined : eq(users.dailyDigest, true),
+                    only,
+                ),
+            )
             .orderBy(asc(users.id))
             .limit(CHUNK);
 

@@ -398,7 +398,7 @@ if (error instanceof HttpError && error.status === 403) return <Forbidden />;
   um número acima do teto do `integer` viram 404 sem nem consultar o banco.
 - **`generateMetadata` não vaza o título** de um quadro alheio: sem acesso, a
   aba fica com o título padrão.
-- O 403 hoje é uma tela renderizada com status HTTP 200 — ver a seção 16.
+- O 403 hoje é uma tela renderizada com status HTTP 200 — ver a seção 17.
 
 ---
 
@@ -940,7 +940,7 @@ Consequência consciente: quem abre o app de outro fuso vê e digita prazos no
 fuso do app, não no do computador. Se um dia houver gente em fusos diferentes,
 a saída não é voltar para o fuso do navegador — é guardar o fuso **por
 usuário** e converter na borda (formulário, tela e e-mail), mantendo o banco em
-UTC (seção 16).
+UTC (seção 17).
 
 ### 7.4 Hidratação: o que muda entre o SSR e o navegador
 
@@ -1027,11 +1027,12 @@ pelo mesmo motivo.
   | Cadastro, por IP | 10 por minuto |
   | "Esqueci a senha" | 6 por minuto por IP; um link a cada 60 s por e-mail |
   | Convite por e-mail | 20 por hora por pessoa que convida |
+  | Link de confirmação de e-mail | um a cada 60 s e 5 por hora, por conta |
   | Troca de senha | 6 por minuto por pessoa |
   | Resumo de teste | 3 por minuto por pessoa |
 
-  As janelas vencidas (e as sessões e os convites vencidos) são apagadas pelo
-  cron noturno de arquivamento.
+  As janelas vencidas (e as sessões, os convites e os pedidos de confirmação
+  vencidos) são apagadas pelo cron noturno de arquivamento.
 - **O `?next=` não vira redirecionamento aberto**
   ([`safeRedirectPath`](src/server/auth/session.ts)). Checar o prefixo ("começa
   com `/` e não com `//`") não basta, porque o navegador limpa a URL antes de
@@ -1047,11 +1048,17 @@ pelo mesmo motivo.
   (como sessões e redefinição de senha), o convite vale 7 dias e uma vez só —
   aceitar APAGA a linha antes de inserir a pessoa, então dois cliques não entram
   duas vezes. E o convite **não** é aceito sozinho quando alguém se cadastra com o
-  e-mail convidado: o app não verifica e-mail, e qualquer um criaria a conta com
+  e-mail convidado: o cadastro não verifica e-mail, e qualquer um criaria a conta com
   o endereço de outra pessoa para herdar os quadros dela. Sem o link, não entra.
   Convidar também manda e-mail para um endereço digitado por alguém — daí o teto
   por hora, e o envio dentro da transação: se o e-mail não sai, nenhum convite
   fica pendente (nem o link de um reenvio anterior é invalidado).
+- **Admin do Taskon exige prova, e bloqueio vale na hora** (seção 16). O e-mail
+  do admin nativo está no código público, então ele só vale com o e-mail
+  confirmado (link de confirmação ou redefinição de senha). Bloquear apaga
+  todas as sessões da conta, e `currentSession` recusa sessão de conta
+  bloqueada mesmo assim. O login só conta que a conta está bloqueada depois da
+  senha certa.
 - **CSRF**: Server Action só aceita POST, e o Next compara o `Origin` com o
   `Host` (ou `X-Forwarded-Host`), recusando o que não bate. O cookie de sessão
   `SameSite=Lax` também não vai em POST vindo de outro site. Atrás de um proxy
@@ -1083,7 +1090,9 @@ pelo mesmo motivo.
   `taskon_status`. Nenhum carrega nada sensível, e o conteúdo do flash é
   mostrado como texto, nunca como HTML.
 - **Nunca confie em esconder o botão.** `board.can.manage` e `board.can.delete`
-  servem à tela; quem decide é o `authorizeBoard` no serviço.
+  servem à tela; quem decide é o `authorizeBoard` no serviço. O mesmo vale para
+  o `can` de cada linha do `/admin`: o serviço consulta `adminCan` de novo, com
+  a conta alvo travada.
 - **Segredo nunca leva `NEXT_PUBLIC_`.** O único valor embutido no código do
   navegador é o fuso do app.
 
@@ -1279,7 +1288,7 @@ As rotas de cron declaram `maxDuration = 300` (5 minutos) e
 `dynamic = 'force-dynamic'`. Com o espaçamento que o Resend exige (600 ms entre
 envios, seção 13.7), uma execução alcança umas 450 pessoas. Como quem já
 recebeu fica carimbado, chamar a rota de novo continua de onde parou. Base maior
-que isso pede fila (seção 16).
+que isso pede fila (seção 17).
 
 ### 11.3 Variáveis de ambiente
 
@@ -1320,7 +1329,7 @@ O build da Vercel é o `npm run vercel-build` = `db:migrate` + `next build`
 
 A função da Vercel não tem disco gravável que sobreviva (só um `/tmp` efêmero,
 de cada instância). Daí: nada de PGlite em produção (seção 6.1), nada de upload
-em disco — anexos iriam para o Vercel Blob (seção 16) —, nada de arquivo de log:
+em disco — anexos iriam para o Vercel Blob (seção 17) —, nada de arquivo de log:
 `console.info` e `console.error` vão para os logs da função. O
 [`next.config.ts`](next.config.ts) também tira o PGlite do pacote da função
 (`outputFileTracingExcludes`).
@@ -1630,7 +1639,7 @@ aplicadas ali:
   depende de imagem chega quebrado.
 - Cabeçalho `List-Unsubscribe` — sem ele, quem quer sair marca como spam, e isso
   queima a reputação do domínio no Resend. Hoje ele aponta para a página de
-  notificações; o descadastro de um clique está na seção 16.
+  notificações; o descadastro de um clique está na seção 17.
 - Versão em texto puro junto (`digestText`), para quem não renderiza HTML.
 
 As datas imitam o Carbon em pt_BR ("12 de out", "ter, 13 de out"), com os nomes
@@ -1807,7 +1816,115 @@ diz algo no card, nada num prompt.
 
 ---
 
-## 16. O que ficou de fora (e como fazer)
+## 16. Administração do Taskon
+
+O painel [`/admin`](src/app/(app)/admin/page.tsx) é de quem administra o
+**Taskon inteiro** — não confundir com o papel "admin" de um quadro
+(`board_user.role`). Quem pode o quê mora numa política pura,
+[`src/server/policies/admin.ts`](src/server/policies/admin.ts): o serviço
+([`admin.ts`](src/server/services/admin.ts)) a confere em toda operação, e a
+tela a usa só para esconder botões (o `can` de cada linha).
+
+| Ação | Admin nativo | Admin concedido |
+| --- | :---: | :---: |
+| Abrir o painel e ver o histórico | ✓ | ✓ |
+| Bloquear / desbloquear conta comum | ✓ | ✓ |
+| Conceder / tirar admin | ✓ | |
+| Bloquear / desbloquear um admin | ✓ | |
+| Qualquer coisa numa conta de e-mail nativo | | |
+| Qualquer coisa na própria conta | | |
+
+Conceder fica só com o nativo: se um admin concedido pudesse criar outros (ou
+tirar e bloquear os colegas), um descuido viraria disputa de poder sem árbitro.
+Conta bloqueada não recebe admin (desbloqueie antes), e bloquear um admin não
+tira o `is_admin` dele: desbloqueado, ele volta como era.
+
+### 16.1 O admin nativo precisa provar o e-mail
+
+Nativo é a conta cujo e-mail está em `config.admin.nativeEmails`
+(`NATIVE_ADMIN_EMAILS`, por padrão `victorgabriel08fs@gmail.com`) **e** que tem
+`email_verified_at` preenchido. A lista está no código, o repositório é público
+e o cadastro não verifica e-mail: sem a prova, qualquer um criaria a conta com
+aquele endereço — ou trocaria o próprio e-mail para ele no perfil — e viraria
+admin.
+
+A prova é a caixa de entrada, por um de dois caminhos, que terminam os dois em
+`markEmailVerified`:
+
+- o **link de confirmação** que a tela de ativação do `/admin` manda
+  ([`email-verification.ts`](src/server/services/email-verification.ts)). O
+  token vale 24 h e uma vez só, fica amarrado ao e-mail do pedido (trocar de
+  endereço antes de clicar mata o link) e é gasto por um botão (POST), não ao
+  abrir a página: os scanners dos provedores de e-mail fazem GET no link antes
+  da pessoa;
+- uma **redefinição de senha concluída** — aquele link também só chega à caixa
+  dela.
+
+Trocar o e-mail no perfil zera `email_verified_at`. Quem ocupar o endereço
+nativo antes do dono fica intocável pelo painel, mas sem poder nenhum; o dono
+toma a conta pelo "Esqueci a senha", que ainda derruba as sessões do ocupante.
+A ativação entra no histórico (`admin.activated`), com a própria conta como
+autora.
+
+Em produção, tudo isso depende do Resend: sem e-mail, nem o link nem a
+redefinição chegam. Em último caso, preencher `email_verified_at` da conta
+direto no banco também ativa — só não deixa o evento no histórico.
+
+### 16.2 Bloquear é tirar da conta, não apagar
+
+Bloquear grava `blocked_at`/`blocked_by`, **apaga todas as sessões** da conta
+(inclusive as de "lembrar de mim": a próxima requisição de qualquer aba ou
+aparelho já chega como visitante) e registra `user.blocked`. Quadros, cards e
+participações ficam como estão; desbloquear devolve tudo, menos as sessões
+derrubadas — a pessoa entra de novo com a senha de sempre. Por defesa em
+profundidade, `currentSession` também ignora a sessão de conta bloqueada, e o
+resumo diário nunca vai para ela, nem com `--force`.
+
+O login confere a senha **antes** de falar do bloqueio: com a senha errada a
+resposta é a de sempre (e conta no rate limit), para quem não sabe a senha não
+descobrir quais contas existem ou foram bloqueadas. O "Esqueci a senha" de uma
+conta bloqueada funciona como qualquer outro — trocar a senha não desbloqueia.
+
+### 16.3 Detalhes que importam
+
+- **404, não 403.** Para quem não administra, o painel não existe — um 403
+  confirmaria que há algo ali. Por isso a rota não tem `loading.tsx` (o
+  esqueleto sairia no stream, com status 200, antes da decisão), o título da aba
+  só vira "Administração" para quem administra, e o item do menu da conta só
+  aparece para quem tem `auth.user.admin` (o nativo pendente incluído: é no
+  `/admin` que ele pede o link).
+- **Decide o estado de agora, não o da tela.** Cada operação trava a linha da
+  conta alvo (`FOR NO KEY UPDATE`) antes de consultar a política: dois cliques,
+  ou dois admins, entram em fila, e o segundo recebe 422 ("já está
+  bloqueado(a)") sem evento repetido. Quem não administra recebe o mesmo 403
+  com qualquer id, antes de o alvo ser procurado — a diferença 403/404 não
+  revela quais contas existem.
+- **A recusa também atualiza a tela.** Um 403/422 nessas actions quase sempre
+  quer dizer tela velha (outra aba, outro admin), então a action chama
+  `refresh()` antes de responder: o botão que não vale mais some junto com o
+  toast, e quem perdeu o admin já cai no 404.
+- **Histórico** (`admin_events`): conceder, tirar, bloquear, desbloquear e
+  ativar, cada um na mesma transação da mudança — mudança de poder sem rastro
+  não acontece. Nome e e-mail do alvo são copiados para a linha continuar
+  legível se a conta for excluída.
+- **Busca, filtro e página moram na URL** (sobrevivem ao F5 e ao Voltar). A
+  busca é `ILIKE` em nome e e-mail, escapando `%`, `_` e `\`: senão "100%"
+  viraria curinga.
+- **Faxina**: os pedidos de confirmação vencidos saem no cron noturno, junto
+  com sessões, convites e janelas de rate limit.
+- **No desenvolvimento**, ponha `NATIVE_ADMIN_EMAILS=victor@taskon.test` no
+  `.env.local`: as contas do seed já nascem com o e-mail confirmado.
+
+Testes: [`tests/admin.test.ts`](tests/admin.test.ts) (a tabela de hierarquia
+inteira, o bloqueio, o histórico e o painel),
+[`tests/email-verification.test.ts`](tests/email-verification.test.ts),
+[`tests/blocked-users.test.ts`](tests/blocked-users.test.ts),
+`tests/admin-review/` e, em `tests/regressions/`, os `admin-*.test.ts` e
+`email-verification-housekeeping.test.ts`.
+
+---
+
+## 17. O que ficou de fora (e como fazer)
 
 | Item | Caminho |
 | --- | --- |
@@ -1819,7 +1936,7 @@ diz algo no card, nada num prompt.
 | Fuso por usuário | Coluna `timezone` em `users`; converter na borda (formulário, `dueState`, e-mail), com o banco em UTC e o `APP_TIMEZONE` virando só o padrão (seção 7.3). |
 | Horário do resumo por usuário | Coluna `digest_at` + cron de hora em hora (o plano Hobby só agenda cron diário) mandando para quem marcou aquela hora; o carimbo diário continua valendo. Hoje o horário é um só, global (seção 13). |
 | Resumo para bases grandes | Passou de umas 450 pessoas por execução (seção 11.2)? API de lote do Resend (até 100 e-mails por chamada) ou uma fila de verdade. |
-| Verificação de e-mail | `email_verified_at` já existe e é zerado quando o e-mail muda ([`profile.ts`](src/server/services/profile.ts)). Falta o fluxo: token em hash como o da redefinição de senha, rota `/verify-email/[token]`, e não mandar o resumo para endereço não verificado. |
+| Verificação de e-mail para todos | O fluxo já existe (seção 16.1) e a action `requestEmailVerification` serve a qualquer conta logada, mas a tela só o oferece na ativação do admin nativo. Falta oferecê-lo a todos (um aviso no painel, e em Configurações › Perfil depois de trocar o e-mail) e não mandar o resumo para endereço não verificado. |
 | Descadastro de um clique (RFC 8058) | Gmail e Yahoo exigem de quem manda volume: cabeçalho `List-Unsubscribe-Post: List-Unsubscribe=One-Click` + uma URL HTTPS com token assinado por pessoa, servida por um Route Handler POST que desliga `daily_digest` sem sessão. Hoje o `List-Unsubscribe` aponta para `/settings/notifications`. |
 | 403 com status HTTP 403 | Hoje o layout do quadro renderiza `<Forbidden />` com status 200. Quando o `forbidden()` sair do experimental (hoje exige `experimental.authInterrupts`), trocar o `return <Forbidden />` por `forbidden()` e mover a tela para `src/app/forbidden.tsx`. |
 | Derrubar as outras sessões ao trocar a senha | Como no legado, trocar a senha mantém as outras sessões (a redefinição por e-mail já derruba todas). Para mudar: na action `updatePassword`, apagar as linhas de `sessions` do usuário com `id` diferente da sessão atual ([`session.ts`](src/server/auth/session.ts) expõe `currentSession()`). |

@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, gt, sql } from 'drizzle-orm';
 import { db } from '@/server/db';
 import { rateLimits } from '@/server/db/schema';
 import { HttpError } from '@/server/errors';
@@ -31,6 +31,18 @@ export async function hit(key: string, decaySeconds: number, now = new Date()): 
         .returning({ hits: rateLimits.hits });
 
     return row?.hits ?? 1;
+}
+
+/**
+ * Devolve uma tentativa contada por `hit`, porque a operação não aconteceu e
+ * não pode gastar a cota (o e-mail que não saiu, por exemplo). Só mexe na
+ * janela ainda aberta: numa vencida, o próximo `hit` já recomeça do zero.
+ */
+export async function release(key: string, now = new Date()): Promise<void> {
+    await db
+        .update(rateLimits)
+        .set({ hits: sql`greatest(${rateLimits.hits} - 1, 0)` })
+        .where(and(eq(rateLimits.key, key), gt(rateLimits.resetAt, now)));
 }
 
 async function current(key: string, now: Date): Promise<{ hits: number; resetAt: Date } | null> {

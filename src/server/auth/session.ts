@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { createHash, randomBytes } from 'node:crypto';
-import { and, eq, gt, lte } from 'drizzle-orm';
+import { and, eq, gt, isNull, lte } from 'drizzle-orm';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { cache } from 'react';
@@ -87,6 +87,11 @@ export async function endSession(): Promise<void> {
 /**
  * A sessão e o usuário desta requisição, ou null. Memoizado por requisição
  * (`cache` do React): layout, página e componentes podem chamar à vontade.
+ *
+ * Conta bloqueada não tem sessão. Bloquear já apaga todas as sessões dela
+ * (src/server/services/admin.ts); o filtro aqui é a defesa em profundidade —
+ * uma sessão aberta no meio do bloqueio (um login que corria junto) ou
+ * gravada por fora não vale nada.
  */
 export const currentSession = cache(async (): Promise<{ session: SessionRow; user: UserRow } | null> => {
     const token = (await cookies()).get(SESSION_COOKIE)?.value;
@@ -100,7 +105,7 @@ export const currentSession = cache(async (): Promise<{ session: SessionRow; use
         .select({ session: sessions, user: users })
         .from(sessions)
         .innerJoin(users, eq(users.id, sessions.userId))
-        .where(and(eq(sessions.id, id), gt(sessions.expiresAt, now)))
+        .where(and(eq(sessions.id, id), gt(sessions.expiresAt, now), isNull(users.blockedAt)))
         .limit(1);
 
     if (!row) return null;
