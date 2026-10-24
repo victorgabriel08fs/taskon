@@ -97,6 +97,22 @@ export const addBoardMember = defineAction(
     },
 ) satisfies BoardActions['addBoardMember'];
 
+/**
+ * A própria pessoa sai do quadro (qualquer membro, menos o dono — o aviso vem
+ * em toast). Volta para a lista de quadros: a página de onde ela saiu passa a
+ * dar 403.
+ */
+export const leaveBoard = defineAction(
+    z.object({ boardId: id() }),
+    async ({ boardId }, { user }) => {
+        const board = await memberService.leaveBoard(user, boardId);
+
+        await flash(toast('success', `Você saiu do quadro "${board.title}".`));
+
+        redirect('/boards');
+    },
+) satisfies BoardActions['leaveBoard'];
+
 /** Tira alguém do quadro (owner/admin). O dono não sai — o aviso vem em toast. */
 export const removeBoardMember = defineAction(
     z.object({ boardId: id(), userId: id() }),

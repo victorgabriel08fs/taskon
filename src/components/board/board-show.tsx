@@ -40,7 +40,7 @@ import { useConfirm } from '@/components/ui/confirm';
 import { runAction, showToast } from '@/lib/actions';
 import { boardBackgroundClass } from '@/lib/palette';
 import { cn, pluralize } from '@/lib/utils';
-import { deleteBoard } from '@/server/actions/boards';
+import { deleteBoard, leaveBoard } from '@/server/actions/boards';
 import { moveCard } from '@/server/actions/cards';
 import { createList, deleteList, reorderLists } from '@/server/actions/lists';
 import type {
@@ -466,6 +466,16 @@ export function BoardShow({ board, backgrounds, colors, autoArchive, activity, c
                                 confirmLabel: 'Excluir quadro',
                                 // A action redireciona para /boards com o aviso.
                                 onConfirm: () => void runAction(() => deleteBoard({ boardId: board.id })),
+                            })
+                        }
+                        onLeaveBoard={() =>
+                            confirm({
+                                title: 'Sair deste quadro?',
+                                description:
+                                    'Ele sai da sua lista e você deixa de ver os cards dele. Para voltar, alguém que administra o quadro precisa te convidar de novo.',
+                                confirmLabel: 'Sair do quadro',
+                                // A action redireciona para /boards com o aviso.
+                                onConfirm: () => void runAction(() => leaveBoard({ boardId: board.id })),
                             })
                         }
                     />

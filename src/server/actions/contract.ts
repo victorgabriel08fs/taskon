@@ -102,6 +102,8 @@ export interface BoardActions {
     addBoardMember: Action<{ boardId: number; email: string; role: 'admin' | 'member' }>;
     /** manage. O dono não sai (erro em toast). */
     removeBoardMember: Action<{ boardId: number; userId: number }>;
+    /** view, menos o dono (erro em toast). redirect → /boards (flash 'Você saiu do quadro "Título".'). */
+    leaveBoard: Action<{ boardId: number }>;
 }
 
 /* -------------------------------------------------------------------------- */

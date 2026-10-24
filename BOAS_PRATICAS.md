@@ -194,6 +194,14 @@ Quatro verbos, e só quatro:
 - `manage` — configurações, etiquetas e membros (owner/admin)
 - `delete` — só o dono (`boards.owner_id`)
 
+**Sair do quadro não é um quinto verbo.** É `view` mais "não é o dono"
+([`leaveBoard`](src/server/services/members.ts)): membro e admin saem por conta
+própria, e o dono não, porque sem ele ninguém mais poderia excluir o quadro. A
+tela sabe pelo `can.leave` ([`canLeave`](src/server/policies/board.ts)), e quem
+não participa recebe o 403 de sempre — o aviso de sucesso leva o título, e ele
+não pode vazar para quem chuta ids. Como na remoção, as atribuições da pessoa
+nos cards ficam: o "minhas tarefas" já ignora quadro de que ela não participa.
+
 Quando um id chega cru do cliente (`labelId`, `userId`, `board_list_id`),
 **confira que ele pertence ao MESMO quadro** antes de usar:
 

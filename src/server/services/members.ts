@@ -2,7 +2,7 @@ import 'server-only';
 
 import { and, eq } from 'drizzle-orm';
 import { db } from '@/server/db';
-import { boardUser, users, type UserRow } from '@/server/db/schema';
+import { boardUser, users, type BoardRow, type UserRow } from '@/server/db/schema';
 import { HttpError, abort, invalid } from '@/server/errors';
 import { authorizeBoard } from '@/server/policies/board';
 import { logActivity } from '@/server/services/activity';
@@ -10,8 +10,13 @@ import { dropInvitation, inviteByEmail } from '@/server/services/invitations';
 
 /**
  * Membros do quadro — o antigo `BoardMemberController`. Convidar e remover
- * são configurações do quadro: só owner/admin (`manage`).
+ * são configurações do quadro: só owner/admin (`manage`). Sair é da própria
+ * pessoa: qualquer membro, menos o dono.
  */
+
+export const LEAVE_MESSAGES = {
+    owner: 'O dono não pode sair do próprio quadro. Para deixá-lo, exclua o quadro.',
+} as const;
 
 export type AddMemberResult =
     | { kind: 'added'; member: Pick<UserRow, 'id' | 'name'> }
@@ -101,4 +106,35 @@ export async function removeBoardMember(actor: Pick<UserRow, 'id'>, boardId: num
             tx,
         );
     });
+}
+
+/**
+ * A própria pessoa sai do quadro — o lado de quem foi convidado do
+ * `removeBoardMember`. Vale para membro e admin; o dono não sai, porque sem
+ * ele o quadro ficaria sem ninguém que pudesse excluí-lo (422 em toast).
+ *
+ * Como na remoção, as atribuições dela nos cards ficam: o "minhas tarefas"
+ * ignora quadros de que a pessoa não participa, e quem voltar por um convite
+ * novo reencontra o que era seu. Devolve o título para o aviso.
+ */
+export async function leaveBoard(actor: Pick<UserRow, 'id'>, boardId: number): Promise<Pick<BoardRow, 'id' | 'title'>> {
+    // `view` primeiro: quem não participa recebe o 403 de sempre, sem
+    // descobrir o título do quadro pelo aviso.
+    const { board } = await authorizeBoard(actor, boardId, 'view');
+
+    if (board.ownerId === actor.id) throw new HttpError(422, LEAVE_MESSAGES.owner);
+
+    await db.transaction(async (tx) => {
+        const left = await tx
+            .delete(boardUser)
+            .where(and(eq(boardUser.boardId, board.id), eq(boardUser.userId, actor.id)))
+            .returning({ id: boardUser.id });
+
+        // Saiu por outra aba entre a autorização e aqui: nada a registrar.
+        if (left.length === 0) return;
+
+        await logActivity({ boardId: board.id, userId: actor.id, type: 'member.left', description: 'saiu do quadro' }, tx);
+    });
+
+    return { id: board.id, title: board.title };
 }

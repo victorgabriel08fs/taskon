@@ -108,7 +108,7 @@ export interface BoardResourceData {
     /** Favorito é por pessoa: vem da linha de board_user de quem está vendo. */
     isFavorite: boolean;
     /** As permissões que a tela precisa saber (`boardCan` da policy). */
-    can: { manage: boolean; delete: boolean };
+    can: { manage: boolean; delete: boolean; leave: boolean };
     /**
      * Quantos cards estão na gaveta. É ele que decide se o menu do quadro
      * mostra "Arquivados" — sem a contagem, o item apareceria sempre vazio,
@@ -135,7 +135,7 @@ export function boardResource(board: BoardSource, data: BoardResourceData): Boar
         // Dias até um concluído sair da coluna; null = desligado.
         auto_archive_days: board.autoArchiveDoneAfterDays,
         archived_count: data.archivedCount,
-        can: { manage: data.can.manage, delete: data.can.delete },
+        can: { manage: data.can.manage, delete: data.can.delete, leave: data.can.leave },
         members: data.members,
         invitations: data.invitations,
         labels: data.labels,

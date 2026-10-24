@@ -45,7 +45,7 @@ function board(cards: Card[]): Board {
         owner_id: 1,
         is_favorite: false,
         role: 'owner',
-        can: { manage: true, delete: true },
+        can: { manage: true, delete: true, leave: false },
         auto_archive_days: null,
         archived_count: 0,
         members: [],

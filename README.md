@@ -16,7 +16,8 @@
 - **Painel** com gráficos animados: ritmo de 14 dias, anel de prazos, progresso
   por quadro, próximos vencimentos e feed de atividade.
 - **Quadros** com 8 fundos em gradiente, favoritos e membros com papéis
-  (dono / admin / membro).
+  (dono / admin / membro). Quem foi convidado sai do quadro quando quiser, pelo
+  menu **⋯ › Sair do quadro**; o dono não sai, só exclui.
 - **Painel de administração** (`/admin`): contas, estatísticas e histórico. O
   admin nativo (`victorgabriel08fs@gmail.com`) concede e tira admin e bloqueia
   contas — conta bloqueada não entra e perde as sessões abertas na hora. Admins

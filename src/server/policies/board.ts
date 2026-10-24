@@ -62,10 +62,20 @@ export async function authorizeBoard(
     return { board, role };
 }
 
-/** As duas permissões que a tela do quadro precisa saber (o `can` do BoardResource). */
+/**
+ * Sair do quadro é de todo membro, menos do dono: o quadro é dele, e sem o
+ * dono ninguém mais poderia excluí-lo. Quem decide no servidor é o
+ * `leaveBoard` (src/server/services/members.ts); isto só serve à tela.
+ */
+export function canLeave(role: BoardRole | null, board: Pick<BoardRow, 'ownerId'>, userId: number): boolean {
+    return role !== null && board.ownerId !== userId;
+}
+
+/** As permissões que a tela do quadro precisa saber (o `can` do BoardResource). */
 export function boardCan(role: BoardRole | null, board: Pick<BoardRow, 'ownerId'>, userId: number) {
     return {
         manage: allows('manage', role, board, userId),
         delete: allows('delete', role, board, userId),
+        leave: canLeave(role, board, userId),
     };
 }

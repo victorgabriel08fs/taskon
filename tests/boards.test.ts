@@ -281,7 +281,7 @@ describe('abrir o quadro', () => {
 
         expect(page.board.id).toBe(board.id);
         expect(page.board.role).toBe('member');
-        expect(page.board.can).toEqual({ manage: false, delete: false });
+        expect(page.board.can).toEqual({ manage: false, delete: false, leave: true });
     });
 
     it('monta o payload completo: colunas vivas em ordem, cards, etiquetas, membros e configurações', async () => {
@@ -332,7 +332,7 @@ describe('abrir o quadro', () => {
             owner_id: owner.id,
             is_favorite: false,
             role: 'owner',
-            can: { manage: true, delete: true },
+            can: { manage: true, delete: true, leave: false },
             auto_archive_days: 14,
             archived_count: 1,
         });

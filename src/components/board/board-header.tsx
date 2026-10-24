@@ -5,6 +5,7 @@ import {
     ClipboardList,
     History,
     ImageIcon,
+    LogOut,
     Mail,
     MoreHorizontal,
     RotateCw,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { FilterPopover, type BoardFilters } from '@/components/board/filters';
+import { useUser } from '@/components/providers';
 import { TimeAgo } from '@/components/time-ago';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -36,6 +38,8 @@ interface BoardHeaderProps {
     onStartExport: () => void;
     onOpenArchived: () => void;
     onDeleteBoard: () => void;
+    /** Abre a confirmação de sair do quadro — só para quem não é o dono (`can.leave`). */
+    onLeaveBoard: () => void;
 }
 
 const ghost =
@@ -57,6 +61,7 @@ export function BoardHeader({
     onStartExport,
     onOpenArchived,
     onDeleteBoard,
+    onLeaveBoard,
 }: BoardHeaderProps) {
     const [editing, setEditing] = useState(false);
     const [title, setTitle] = useState(board.title);
@@ -135,7 +140,7 @@ export function BoardHeader({
                     ))}
                 </div>
 
-                {board.can.manage && <InvitePopover board={board} />}
+                {board.can.manage && <InvitePopover board={board} onLeaveBoard={onLeaveBoard} />}
             </div>
 
             <div className="ml-auto flex items-center gap-2">
@@ -223,6 +228,24 @@ export function BoardHeader({
                                 </div>
                             )}
 
+                            {/* Quem foi convidado sai por aqui; o dono, que não
+                                sai, tem o "Excluir quadro" no mesmo lugar. */}
+                            {board.can.leave && (
+                                <>
+                                    <div className="my-1 h-px bg-border" />
+                                    <PopoverItem
+                                        danger
+                                        icon={<LogOut className="size-4" />}
+                                        onClick={() => {
+                                            close();
+                                            onLeaveBoard();
+                                        }}
+                                    >
+                                        Sair do quadro
+                                    </PopoverItem>
+                                </>
+                            )}
+
                             {board.can.delete && (
                                 <>
                                     <div className="my-1 h-px bg-border" />
@@ -287,7 +310,8 @@ function BackgroundGrid({ board, backgrounds }: { board: Board; backgrounds: Boa
     );
 }
 
-function InvitePopover({ board }: { board: Board }) {
+function InvitePopover({ board, onLeaveBoard }: { board: Board; onLeaveBoard: () => void }) {
+    const user = useUser();
     const form = useActionForm({ email: '', role: 'member' as 'member' | 'admin' }, (data) =>
         addBoardMember({ boardId: board.id, ...data }),
     );
@@ -310,7 +334,7 @@ function InvitePopover({ board }: { board: Board }) {
                 </button>
             )}
         >
-            {() => (
+            {({ close }) => (
                 <div className="space-y-3 p-2">
                     <form
                         onSubmit={(event) => {
@@ -362,7 +386,23 @@ function InvitePopover({ board }: { board: Board }) {
                                     </p>
                                 </div>
 
-                                {member.id !== board.owner_id && (
+                                {/* Na própria linha, o X vira "sair": remover a si
+                                    mesmo pelo X tirava a pessoa sem confirmação e a
+                                    deixava olhando para um 403. */}
+                                {member.id === user.id && board.can.leave ? (
+                                    <button
+                                        type="button"
+                                        title="Sair do quadro"
+                                        aria-label="Sair do quadro"
+                                        onClick={() => {
+                                            close();
+                                            onLeaveBoard();
+                                        }}
+                                        className="rounded-md p-1 text-muted-fg transition-colors hover:bg-danger/10 hover:text-danger"
+                                    >
+                                        <LogOut className="size-3.5" />
+                                    </button>
+                                ) : member.id !== board.owner_id && (
                                     <button
                                         type="button"
                                         aria-label={`Remover ${member.name}`}

@@ -176,7 +176,8 @@ export interface Board {
     owner_id: number;
     is_favorite: boolean;
     role: BoardRole | null;
-    can: { manage: boolean; delete: boolean };
+    /** `leave`: quem pode sair do quadro por conta própria — todo membro, menos o dono. */
+    can: { manage: boolean; delete: boolean; leave: boolean };
     /** Dias entre concluir o card e ele sair da coluna. `null` = desligado. */
     auto_archive_days: number | null;
     /** Quantos cards estão na gaveta — inclui os arquivados na mão. */
