@@ -3,6 +3,7 @@
 import { LogIn } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect } from 'react';
+import { PasskeyLogin } from '@/components/auth/passkey-login';
 import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/input';
 import { useActionForm } from '@/lib/actions';
@@ -24,8 +25,20 @@ const focusOnMount = (node: HTMLInputElement | null) => node?.focus();
  *
  * `status` é a confirmação deixada por outra tela (hoje, a redefinição de
  * senha) — o antigo `session('status')`.
+ *
+ * Embaixo da senha, "Entrar com passkey" (passkey-login.tsx), que também
+ * oferece as passkeys no próprio campo de e-mail.
  */
-export function LoginForm({ next, status }: { next: string | null; status: string | null }) {
+export function LoginForm({
+    next,
+    status,
+    passkeyRefreshMs,
+}: {
+    next: string | null;
+    status: string | null;
+    /** Validade do desafio do preenchimento automático, menos uma folga. */
+    passkeyRefreshMs: number;
+}) {
     const form = useActionForm({ email: '', password: '', remember: false, next }, login);
 
     // Já está na tela: apaga o cookie para o aviso não voltar no F5 nem na
@@ -56,7 +69,9 @@ export function LoginForm({ next, status }: { next: string | null; status: strin
                     <Input
                         type="email"
                         ref={focusOnMount}
-                        autoComplete="email"
+                        // "webauthn" no fim: é o que faz o navegador oferecer
+                        // as passkeys deste site já no foco do campo.
+                        autoComplete="username webauthn"
                         required
                         placeholder="voce@exemplo.com"
                         value={form.data.email}
@@ -99,6 +114,8 @@ export function LoginForm({ next, status }: { next: string | null; status: strin
                     Entrar
                 </Button>
             </form>
+
+            <PasskeyLogin next={next} remember={form.data.remember} refreshAfterMs={passkeyRefreshMs} />
 
             <p className="mt-8 text-center text-sm text-muted-fg">
                 Ainda não tem conta?{' '}

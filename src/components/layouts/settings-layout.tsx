@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, Palette, ShieldCheck, UserRound } from 'lucide-react';
+import { Bell, KeyRound, Palette, ShieldCheck, UserRound } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 const TABS = [
     { href: '/settings/profile', label: 'Perfil', icon: UserRound },
     { href: '/settings/password', label: 'Senha', icon: ShieldCheck },
+    { href: '/settings/passkeys', label: 'Passkeys', icon: KeyRound },
     { href: '/settings/notifications', label: 'Notificações', icon: Bell },
     { href: '/settings/appearance', label: 'Aparência', icon: Palette },
 ];

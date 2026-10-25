@@ -50,6 +50,10 @@
   `/settings/notifications`.
 - **Autenticação** completa: cadastro, login com rate limit, recuperação de
   senha, troca de senha, perfil com cor de avatar e exclusão de conta.
+- **Entrar com passkey**: digital, rosto ou PIN do aparelho, sem digitar a
+  senha — pelo botão do login ou direto no campo de e-mail, que já oferece as
+  passkeys do site. Cadastro (com a senha atual), nomes e remoção em
+  **Configurações › Passkeys**. A senha continua valendo.
 - **Tema claro/escuro/sistema** sem flash no primeiro carregamento.
 - Deep link para card (`/boards/1/cards/42`): F5 reabre, Voltar fecha.
 

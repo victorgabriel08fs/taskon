@@ -268,7 +268,7 @@ describe('redefinir a senha → caixa de status no login', () => {
         }>;
 
         expect(withStatus.props.children.type).toBe(LoginForm);
-        expect(withStatus.props.children.props).toEqual({ next: null, status: RESET_STATUS });
+        expect(withStatus.props.children.props).toEqual({ next: null, status: RESET_STATUS, passkeyRefreshMs: 540_000 });
 
         request.store.clear();
 
@@ -294,7 +294,7 @@ describe('redefinir a senha → caixa de status no login', () => {
     it('o formulário mostra a caixa verde do legado (mesmas classes), e só quando há status', async () => {
         const { LoginForm } = await import('@/components/auth/login-form');
 
-        const html = renderToStaticMarkup(createElement(LoginForm, { next: null, status: RESET_STATUS }));
+        const html = renderToStaticMarkup(createElement(LoginForm, { next: null, status: RESET_STATUS, passkeyRefreshMs: 540_000 }));
 
         expect(html).toContain(
             `<div role="status" class="mb-5 animate-pop rounded-lg bg-success/12 px-3.5 py-2.5 text-sm font-medium text-success">${RESET_STATUS}</div>`,
@@ -303,6 +303,6 @@ describe('redefinir a senha → caixa de status no login', () => {
         // A caixa vem antes do formulário, como no legado.
         expect(html.indexOf(RESET_STATUS)).toBeLessThan(html.indexOf('<form'));
 
-        expect(renderToStaticMarkup(createElement(LoginForm, { next: null, status: null }))).not.toContain('role="status"');
+        expect(renderToStaticMarkup(createElement(LoginForm, { next: null, status: null, passkeyRefreshMs: 540_000 }))).not.toContain('role="status"');
     });
 });

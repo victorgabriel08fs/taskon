@@ -120,6 +120,26 @@ export const config = {
     },
 
     /**
+     * Entrar com passkey (WebAuthn). Não há variável de ambiente: o domínio
+     * da passkey (o "RP ID") é o do endereço em que a pessoa está — ver
+     * src/server/auth/webauthn.ts.
+     */
+    passkeys: {
+        /**
+         * Quanto um desafio vale. O do login nasce junto com a tela (o
+         * preenchimento automático já o pede ao abrir), e a pessoa pode
+         * demorar a escolher a passkey; o do cadastro, só depois da senha.
+         */
+        challengeMinutes: 10,
+
+        /** Quanto o navegador espera a pessoa no aparelho antes de desistir. */
+        ceremonyTimeoutMs: 120_000,
+
+        /** Teto por conta: a lista é para reconhecer aparelhos, não um depósito. */
+        maxPerUser: 10,
+    },
+
+    /**
      * Administração do Taskon (/admin).
      *
      * O admin NATIVO é a conta cujo e-mail está nesta lista — e só depois de

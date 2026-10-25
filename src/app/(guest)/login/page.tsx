@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { LoginForm } from '@/components/auth/login-form';
 import { AuthLayout } from '@/components/layouts/auth-layout';
 import { redirectIfAuthenticated, safeRedirectPath } from '@/server/auth/session';
+import { config } from '@/server/config';
 import { flashedStatus } from '@/server/flash';
 
 export const metadata: Metadata = {
@@ -24,7 +25,12 @@ export default async function LoginPage({
 
     return (
         <AuthLayout title="Entrar" description="Bom te ver de novo. Seus quadros estão esperando.">
-            <LoginForm next={typeof next === 'string' ? safeRedirectPath(next) : null} status={status} />
+            <LoginForm
+                next={typeof next === 'string' ? safeRedirectPath(next) : null}
+                status={status}
+                // Um minuto de folga antes de o desafio do preenchimento vencer.
+                passkeyRefreshMs={(config.passkeys.challengeMinutes - 1) * 60_000}
+            />
         </AuthLayout>
     );
 }

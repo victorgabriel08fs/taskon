@@ -315,6 +315,33 @@ export interface AuthUser {
 export type AdminAccess = 'native' | 'admin' | 'pending' | null;
 
 /* -------------------------------------------------------------------------- */
+/* Passkeys                                                                    */
+/* -------------------------------------------------------------------------- */
+
+/** Uma passkey da própria conta, como Configurações › Passkeys a lista. */
+export interface Passkey {
+    id: number;
+    name: string;
+    /**
+     * O id da credencial (base64url). É público — o aparelho o mostra a quem
+     * pedir —, e vai nos sinais que dizem ao aparelho quais passkeys ainda valem.
+     */
+    credential_id: string;
+    /** Salva na nuvem do provedor (iCloud, Google…): vale nos outros aparelhos da mesma conta dele. */
+    synced: boolean;
+    created_at: string;
+    last_used_at: string | null;
+}
+
+export interface PasskeySettingsData {
+    passkeys: Passkey[];
+    /** O "user handle" do WebAuthn (base64url), para os sinais ao aparelho. Null antes da primeira passkey. */
+    webauthn_user_id: string | null;
+    /** Teto de passkeys por conta (config.passkeys.maxPerUser). */
+    max: number;
+}
+
+/* -------------------------------------------------------------------------- */
 /* Administração                                                               */
 /* -------------------------------------------------------------------------- */
 

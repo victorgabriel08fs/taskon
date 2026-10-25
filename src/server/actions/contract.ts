@@ -19,6 +19,12 @@
  * flash (ver src/server/flash.ts); no sucesso a Promise não traz dado útil.
  */
 import type {
+    AuthenticationResponseJSON,
+    PublicKeyCredentialCreationOptionsJSON,
+    PublicKeyCredentialRequestOptionsJSON,
+    RegistrationResponseJSON,
+} from '@simplewebauthn/server';
+import type {
     ActionResult,
     ArchivedCard,
     AvatarColor,
@@ -52,6 +58,34 @@ export interface AuthActions {
     resetPassword: Action<{ token: string; email: string; password: string; password_confirmation: string }>;
     /** Qualquer um. Encerra a sessão. redirect → /. */
     logout: NoInput;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Passkeys (src/server/actions/passkeys.ts)                                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Cada cerimônia são duas chamadas: `start…` devolve as opções que o
+ * navegador passa ao aparelho (@simplewebauthn/browser), `finish…` confere o
+ * que o aparelho devolveu. Nenhuma das `start…` re-renderiza a página.
+ */
+export interface PasskeyActions {
+    /** Guest. As opções do login, sem lista de credenciais (o aparelho oferece as que tem). */
+    startPasskeyLogin: NoInput<PublicKeyCredentialRequestOptionsJSON>;
+    /**
+     * Guest. Confere a assinatura e entra. Erros por campo, sem toast:
+     * `passkey` (recusa) ou `credential` (a passkey não existe mais aqui).
+     * redirect → `next` seguro ou /dashboard.
+     */
+    finishPasskeyLogin: Action<{ response: AuthenticationResponseJSON; remember: boolean; next?: string | null }>;
+    /** Confere a senha atual (erro em `current_password`, throttle 6/min) e devolve as opções do cadastro. */
+    startPasskeyRegistration: Action<{ current_password: string }, PublicKeyCredentialCreationOptionsJSON>;
+    /** Guarda a passkey que o aparelho criou; sem nome, ganha o do navegador. Erro em toast. */
+    finishPasskeyRegistration: Action<{ response: RegistrationResponseJSON; name: string | null }>;
+    /** Só as da própria conta (404 para as outras). */
+    renamePasskey: Action<{ passkeyId: number; name: string }>;
+    /** Só as da própria conta (404 para as outras). */
+    deletePasskey: Action<{ passkeyId: number }>;
 }
 
 /* -------------------------------------------------------------------------- */

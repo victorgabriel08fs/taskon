@@ -5,6 +5,7 @@ import { MAX_ID } from '@/server/validation';
 import { describeSweep, sweepBoards } from '@/server/services/done-card-archiver';
 import { pruneExpiredEmailVerifications } from '@/server/services/email-verification';
 import { pruneExpiredInvitations } from '@/server/services/invitations';
+import { pruneExpiredPasskeyChallenges } from '@/server/services/passkeys';
 
 /**
  * A varredura noturna dos concluídos — o antigo `php artisan
@@ -19,8 +20,8 @@ import { pruneExpiredInvitations } from '@/server/services/invitations';
  * `?board=ID` varre só um quadro (com o mesmo `Authorization` do cron).
  *
  * Aproveita a viagem para a faxina noturna: sessões vencidas, convites
- * vencidos, pedidos de confirmação de e-mail vencidos e janelas de rate limit
- * que já fecharam (o que o Laravel fazia por loteria a cada requisição). O
+ * vencidos, pedidos de confirmação de e-mail vencidos, desafios de passkey
+ * vencidos e janelas de rate limit que já fecharam (o que o Laravel fazia por loteria a cada requisição). O
  * dry-run não apaga nada, nem isso.
  */
 export const dynamic = 'force-dynamic';
@@ -51,6 +52,7 @@ export async function GET(request: Request): Promise<Response> {
             await pruneRateLimits(now);
             await pruneExpiredInvitations(now);
             await pruneExpiredEmailVerifications(now);
+            await pruneExpiredPasskeyChallenges(now);
         }
 
         console.info(`[cron:archive-done-cards]${dryRun ? ' (dry-run)' : ''}\n${summary.join('\n')}`);

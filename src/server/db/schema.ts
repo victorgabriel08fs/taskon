@@ -15,6 +15,7 @@
  */
 import { relations } from 'drizzle-orm';
 import {
+    bigint,
     boolean,
     doublePrecision,
     type AnyPgColumn,
@@ -88,11 +89,92 @@ export const users = pgTable(
         // Conta bloqueada por um administrador: não entra e perde as sessões.
         blockedAt: tz('blocked_at'),
         blockedBy: integer('blocked_by').references((): AnyPgColumn => users.id, { onDelete: 'set null' }),
+
+        // O "user handle" do WebAuthn: um id aleatório (base64url), criado na
+        // primeira passkey e o mesmo em todas. O aparelho o guarda junto da
+        // passkey; sendo estável, cadastrar de novo no mesmo aparelho
+        // substitui a passkey antiga em vez de deixar uma órfã. Não é o `id`
+        // da conta de propósito: a especificação pede um valor sem nada que
+        // identifique a pessoa.
+        webauthnUserId: varchar('webauthn_user_id', { length: 64 }),
         ...timestamps,
     },
     (table) => [
         uniqueIndex('users_email_unique').on(table.email),
+        uniqueIndex('users_webauthn_user_id_unique').on(table.webauthnUserId),
         index('users_blocked_by_index').on(table.blockedBy),
+    ],
+);
+
+/**
+ * As passkeys de cada conta. O banco guarda só a chave PÚBLICA (COSE, em
+ * base64url) — a privada nunca sai do aparelho —, então um vazamento desta
+ * tabela não entrega login nenhum.
+ */
+export const passkeys = pgTable(
+    'passkeys',
+    {
+        id: id(),
+        userId: integer('user_id')
+            .notNull()
+            .references(() => users.id, { onDelete: 'cascade' }),
+
+        // O nome que a pessoa reconhece na lista ("iPhone", "Chrome no Windows").
+        name: varchar('name', { length: 60 }).notNull(),
+
+        // O id da credencial em base64url, como o navegador o devolve no login.
+        // text: a especificação deixa o id chegar a 1023 bytes.
+        credentialId: text('credential_id').notNull(),
+        publicKey: text('public_key').notNull(),
+
+        // O contador de assinaturas do autenticador. Passkey sincronizada manda
+        // sempre 0; chave física conta, e um valor que volta para trás denuncia
+        // um clone. bigint: o contador é um inteiro sem sinal de 32 bits.
+        counter: bigint('counter', { mode: 'number' }).notNull().default(0),
+
+        // singleDevice | multiDevice — e se a passkey já está salva na nuvem
+        // (iCloud, Gerenciador de Senhas do Google…), que a lista mostra.
+        deviceType: varchar('device_type', { length: 20 }).notNull(),
+        backedUp: boolean('backed_up').notNull().default(false),
+        transports: jsonb('transports').$type<string[]>(),
+        aaguid: varchar('aaguid', { length: 36 }),
+        lastUsedAt: tz('last_used_at'),
+        ...timestamps,
+    },
+    (table) => [
+        uniqueIndex('passkeys_credential_id_unique').on(table.credentialId),
+        index('passkeys_user_id_index').on(table.userId),
+    ],
+);
+
+/**
+ * Os desafios em aberto das cerimônias de passkey (cadastrar e entrar). Cada
+ * um vale uma vez só e por poucos minutos (config.passkeys).
+ *
+ * A chave é o SHA-256 do próprio desafio — o valor que volta assinado dentro
+ * da resposta do aparelho. Assim não há cookie amarrando o desafio a uma aba:
+ * duas abas de login abertas não se atropelam, e o desafio continua sem poder
+ * ser reaproveitado, porque conferir é apagar.
+ */
+export const webauthnChallenges = pgTable(
+    'webauthn_challenges',
+    {
+        id: varchar('id', { length: 64 }).primaryKey(),
+
+        // registration | authentication
+        purpose: varchar('purpose', { length: 20 }).notNull(),
+
+        // Quem está cadastrando. No login fica null: ninguém entrou ainda.
+        userId: integer('user_id').references(() => users.id, { onDelete: 'cascade' }),
+        expiresAt: tz('expires_at').notNull(),
+        createdAt: tz('created_at')
+            .notNull()
+            .defaultNow()
+            .$defaultFn(() => new Date()),
+    },
+    (table) => [
+        index('webauthn_challenges_user_id_index').on(table.userId),
+        index('webauthn_challenges_expires_at_index').on(table.expiresAt),
     ],
 );
 
@@ -460,6 +542,11 @@ export const usersRelations = relations(users, ({ many }) => ({
     assignments: many(cardUser),
     comments: many(comments),
     sessions: many(sessions),
+    passkeys: many(passkeys),
+}));
+
+export const passkeysRelations = relations(passkeys, ({ one }) => ({
+    user: one(users, { fields: [passkeys.userId], references: [users.id] }),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -549,3 +636,4 @@ export type ActivityRow = typeof activities.$inferSelect;
 export type SessionRow = typeof sessions.$inferSelect;
 export type BoardInvitationRow = typeof boardInvitations.$inferSelect;
 export type AdminEventRow = typeof adminEvents.$inferSelect;
+export type PasskeyRow = typeof passkeys.$inferSelect;

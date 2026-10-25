@@ -47,20 +47,23 @@ async function main() {
     if (!dryRun) {
         // A faxina do cron, sem passar por src/server/auth/session.ts (que lê
         // cookies do Next e não roda fora dele): sessões vencidas, janelas de
-        // rate limit que já fecharam, convites vencidos e pedidos de
-        // confirmação de e-mail vencidos — a mesma lista da rota do cron.
+        // rate limit que já fecharam, convites vencidos, pedidos de
+        // confirmação de e-mail vencidos e desafios de passkey vencidos — a
+        // mesma lista da rota do cron.
         const { lte } = await import('drizzle-orm');
         const { db } = await import('@/server/db');
         const { sessions } = await import('@/server/db/schema');
         const { pruneRateLimits } = await import('@/server/auth/rate-limit');
         const { pruneExpiredEmailVerifications } = await import('@/server/services/email-verification');
         const { pruneExpiredInvitations } = await import('@/server/services/invitations');
+        const { pruneExpiredPasskeyChallenges } = await import('@/server/services/passkeys');
         const now = new Date();
 
         await db.delete(sessions).where(lte(sessions.expiresAt, now));
         await pruneRateLimits(now);
         await pruneExpiredInvitations(now);
         await pruneExpiredEmailVerifications(now);
+        await pruneExpiredPasskeyChallenges(now);
     }
 
     process.exit(0);

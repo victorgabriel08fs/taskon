@@ -1038,9 +1038,43 @@ pelo mesmo motivo.
   | Link de confirmação de e-mail | um a cada 60 s e 5 por hora, por conta |
   | Troca de senha | 6 por minuto por pessoa |
   | Resumo de teste | 3 por minuto por pessoa |
+  | Opções de login com passkey | 30 por minuto por IP (a tela pede ao abrir) |
+  | Login com passkey | 10 por minuto por IP |
+  | Cadastro de passkey (senha atual) | 6 por minuto por pessoa |
 
-  As janelas vencidas (e as sessões, os convites e os pedidos de confirmação
-  vencidos) são apagadas pelo cron noturno de arquivamento.
+  As janelas vencidas (e as sessões, os convites, os pedidos de confirmação e
+  os desafios de passkey vencidos) são apagadas pelo cron noturno de
+  arquivamento.
+- **Passkey** ([`services/passkeys.ts`](src/server/services/passkeys.ts), sobre a
+  SimpleWebAuthn — a mesma biblioteca que o plugin do Better Auth usa no
+  meu-finan). O banco guarda só a chave pública; a privada não sai do aparelho.
+  - **Cadastrar pede a senha atual**, como trocar a senha e excluir a conta:
+    sem isso, quem pega um navegador logado plantaria uma passkey dele na conta.
+    Remover não pede — tirar uma porta não abre outra.
+  - **Desafio de uso único, sem cookie.** A tabela `webauthn_challenges` é
+    chaveada pelo SHA-256 do próprio desafio, que volta assinado na resposta;
+    conferir é APAGAR a linha (dois envios da mesma resposta, só um passa).
+    Sem cookie amarrando o desafio a uma aba, duas abas de login não se
+    atropelam. O de cadastro é da conta que o pediu; vale 10 minutos.
+  - **Verificação do usuário obrigatória** (`userVerification: 'required'`):
+    a passkey substitui a senha, então precisa da digital, do rosto ou do PIN —
+    não basta tocar a chave. E `residentKey: 'required'`, porque o login não
+    pergunta o e-mail antes: só passkey "descobrível" seria oferecida.
+  - **O domínio é o da requisição** ([`webauthn.ts`](src/server/auth/webauthn.ts)):
+    o RP ID é o hostname do `Origin`, que o Next já conferiu contra o Host.
+    Produção, preview e localhost têm cada um as próprias passkeys, sem
+    variável; trocar o domínio de produção deixa as passkeys para trás (a
+    pessoa entra com a senha e cadastra de novo).
+  - **Conta bloqueada** só ouve isso depois da assinatura certa, como no login
+    com senha. Contador que volta para trás (clone de chave física) é recusado.
+  - **User handle estável** (`users.webauthn_user_id`, aleatório): recadastrar
+    no mesmo aparelho substitui a passkey antiga. A tela de passkeys manda os
+    sinais do WebAuthn (`allAcceptedCredentials`, `currentUserDetails`) e o login
+    manda `unknownCredential` quando a passkey não existe mais — o navegador
+    tira da lista as que não valem. Coberto em
+    [`tests/passkeys.test.ts`](tests/passkeys.test.ts), com um autenticador de
+    software ([`tests/support/webauthn.ts`](tests/support/webauthn.ts)) que
+    assina de verdade.
 - **O `?next=` não vira redirecionamento aberto**
   ([`safeRedirectPath`](src/server/auth/session.ts)). Checar o prefixo ("começa
   com `/` e não com `//`") não basta, porque o navegador limpa a URL antes de
