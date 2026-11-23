@@ -81,7 +81,7 @@ export const users = pgTable(
         emailVerifiedAt: tz('email_verified_at'),
         password: varchar('password', { length: 255 }).notNull(),
 
-        // Administração do Taskon (o painel /admin) — NÃO confundir com o papel
+        // Administração da Raia (o painel /admin) — NÃO confundir com o papel
         // "admin" de um quadro (board_user.role). O admin nativo não depende
         // desta coluna: ele vem do e-mail (config.admin.nativeEmails).
         isAdmin: boolean('is_admin').notNull().default(false),

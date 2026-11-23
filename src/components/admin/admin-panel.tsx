@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import type { AdminPanelData } from '@/types';
 
 /**
- * O painel /admin: números do Taskon, a lista de contas (busca, filtro e
+ * O painel /admin: números da Raia, a lista de contas (busca, filtro e
  * página pela URL) e o histórico de administração.
  *
  * Busca, filtro e página trocam só a query string — o pathname é o mesmo, e a

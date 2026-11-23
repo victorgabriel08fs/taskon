@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * A administração do Taskon. Sem `loading.tsx` de propósito: com ele, o
+ * A administração da Raia. Sem `loading.tsx` de propósito: com ele, o
  * esqueleto do painel sairia no stream ANTES de a página decidir — e quem não
  * é admin veria um 200 com o painel "carregando" virar 404, justo o que esta
  * rota esconde. Sem ele o 404 é um 404 de verdade, e a barra de progresso

@@ -1,10 +1,12 @@
-# Identidade visual do Taskon
+# Identidade visual da Raia
 
 > Direção escolhida pelo Victor em 22/11/2026: **A · Grafite e lima**. Este arquivo é a fonte da reformulação visual: o design system (tokens no Tailwind v4), os ícones, a splash e as telas seguem o que está aqui. Mudou a direção, mude aqui primeiro.
 
 ## 1. Conceito
 
-Sóbrio e focado. O Taskon é ferramenta de trabalho diário: o fundo grafite some, os cards aparecem, e uma única cor, o **lima**, marca o que é ação (o botão principal, o foco, o card selecionado). Continua o tom escuro atual (`#1E2327`, o `theme-color` de hoje), troca o violeta por lima e tira os gradientes.
+**Nome.** Raia, a faixa de cada corredor na pista: cada coluna do quadro é uma raia e cada tarefa corre na sua. Segue o padrão da tríade (Taskon virou Raia, ao lado de Prumo e Ara): uma palavra curta em português, um objeto concreto, wordmark em minúsculas. Slogan: **Cada tarefa na sua raia.**
+
+Sóbrio e focado. A Raia é ferramenta de trabalho diário: o fundo grafite some, os cards aparecem, e uma única cor, o **lima**, marca o que é ação (o botão principal, o foco, o card selecionado). Continua o tom escuro atual (`#1E2327`, o `theme-color` de hoje), troca o violeta por lima e tira os gradientes.
 
 - **Escuro primeiro.** O tema escuro é o padrão; o claro existe e tem o mesmo cuidado.
 - **Lima só na ação.** Nunca em texto corrido, fundo grande ou estado (sucesso, erro, aviso).
@@ -13,11 +15,11 @@ Sóbrio e focado. O Taskon é ferramenta de trabalho diário: o fundo grafite so
 
 ## 2. Símbolo e logotipo
 
-- **Símbolo** (`docs/marca/taskon-simbolo.svg`, grade de 64): quadrado grafite de cantos 14 com três colunas que descem da esquerda para a direita, como um quadro em andamento. A primeira é lima (o que está acontecendo), a segunda off-white e a terceira off-white a 50%.
-- **Nome** (`taskon-nome-escuro.svg` e `taskon-nome-claro.svg`): `taskon` desenhado em minúsculas, traço único de 10 na grade do símbolo, terminais arredondados como os cantos das colunas. Não é fonte digitada: use sempre o SVG.
-- **Logotipo** (`taskon-logo-escuro.svg` e `taskon-logo-claro.svg`): símbolo seguido do nome. A altura do x vai do topo das colunas ao pé da coluna lima (metade do símbolo), e o espaço entre os dois é um quarto do símbolo. No app: `<Logo />` em `src/components/logo.tsx`.
+- **Símbolo** (`docs/marca/raia-simbolo.svg`, grade de 64): quadrado grafite de cantos 14 com três colunas que descem da esquerda para a direita, como um quadro em andamento. A primeira é lima (o que está acontecendo), a segunda off-white e a terceira off-white a 50%.
+- **Nome** (`raia-nome-escuro.svg` e `raia-nome-claro.svg`): `raia` desenhado em minúsculas, traço único de 10 na grade do símbolo, terminais arredondados como os cantos das colunas. O pingo do `i` é o único ponto de cor: lima no escuro, lima escura `#4A6100` no claro (é o marcador da raia). Não é fonte digitada: use sempre o SVG; em texto corrido, "Raia" (feminino: "a Raia", "na Raia").
+- **Logotipo** (`raia-logo-escuro.svg` e `raia-logo-claro.svg`): símbolo seguido do nome. A altura do x vai do topo das colunas ao pé da coluna lima (metade do símbolo), e o espaço entre os dois é um quarto do símbolo. No app: `<Logo />` em `src/components/logo.tsx`.
 - **Aplicação**: nome em off-white `#F4F5F0` sobre escuro e grafite `#1E2327` sobre claro. Favicon, ícones do PWA e `apple-touch-icon` saem do símbolo (os de tela cheia, da versão maskable).
-- **Variações**: maskable (`taskon-simbolo-maskable.svg`, símbolo a 78% dentro da zona segura, fundo sem cantos) e monocromático (`taskon-monocromatico.svg`, só as colunas, para badge e `monochrome` do manifesto).
+- **Variações**: maskable (`raia-simbolo-maskable.svg`, símbolo a 78% dentro da zona segura, fundo sem cantos) e monocromático (`raia-monocromatico.svg`, só as colunas, para badge e `monochrome` do manifesto).
 - **Não fazer**: girar, trocar a cor das colunas, pôr a coluna lima em outra posição, aplicar sobre foto ou gradiente.
 
 ## 3. Cores
@@ -90,6 +92,14 @@ Etiquetas e capas de card: definir no design system, com par claro/escuro medido
 - Raio base `0.75rem` (12 px): botões e campos `rounded-lg`, cards e colunas `rounded-xl`, avatares e chips redondos.
 - Sombra só no que flutua; o card sendo arrastado ganha sombra e `scale(1.02)`.
 - Movimento curto (150 a 250 ms), só `transform` e `opacity`, e nada além de fade com `prefers-reduced-motion`.
+
+### Animações da marca
+
+Ligadas às formas e cores do símbolo, como no Prumo: tocam uma vez, partem de um gatilho (carregar, passar o mouse, concluir) e nunca ficam em loop. Com `prefers-reduced-motion`, tudo aparece no estado final.
+
+- **Largada** (`<Logo animated />`, na home e nas telas de entrada): as três colunas descem do topo em sequência, a lima primeiro (500 ms cada, 90 ms entre elas), e o pingo lima do `i` cai por último, como o sinal de largada.
+- **Passo** (hover no logo): as colunas avançam uma posição e voltam (360 ms), uma vez por passagem do mouse.
+- Tempos e curvas ficam só em `src/app/globals.css` (bloco "Marca"). Próximas: card concluído deslizando pela raia e o fio lima acompanhando a rolagem da home.
 
 ## 6. Próximas etapas
 

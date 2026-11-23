@@ -96,7 +96,7 @@ export async function seedDatabase(now = new Date()): Promise<void> {
         // era null aqui.
         const bySystem = { actorId: null };
 
-        const launch = await buildDemoBoard(victor, 'Lançamento do Taskon', tx, bySystem);
+        const launch = await buildDemoBoard(victor, 'Lançamento da Raia', tx, bySystem);
 
         await tx.insert(boardUser).values({ boardId: launch.id, userId: ana.id, role: 'admin' });
 

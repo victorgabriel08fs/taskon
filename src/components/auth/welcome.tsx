@@ -95,7 +95,7 @@ export function Welcome() {
             <div className="min-h-dvh bg-background">
                 <header className="sticky top-0 z-40 border-b border-border glass">
                     <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
-                        <Logo />
+                        <Logo animated />
 
                         <div className="flex items-center gap-2">
                             <ThemeToggle className="hidden sm:inline-flex" />
@@ -342,7 +342,7 @@ function BoardPreview() {
         },
         {
             title: 'Concluído',
-            cards: [{ title: 'Instalar o Taskon', labels: ['bg-amber-500'], meta: null, done: true }],
+            cards: [{ title: 'Instalar a Raia', labels: ['bg-amber-500'], meta: null, done: true }],
         },
     ];
 
@@ -352,7 +352,7 @@ function BoardPreview() {
                 <span className="size-2.5 rounded-full bg-white/35" />
                 <span className="size-2.5 rounded-full bg-white/35" />
                 <span className="size-2.5 rounded-full bg-white/35" />
-                <span className="ml-2 text-xs font-medium text-white/80">Lançamento do Taskon</span>
+                <span className="ml-2 text-xs font-medium text-white/80">Lançamento da Raia</span>
             </div>
 
             <div className="flex gap-3 overflow-hidden rounded-xl p-3">

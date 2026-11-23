@@ -49,7 +49,7 @@ export const confirmEmail = defineAction(
         const { userId, becameNativeAdmin } = await verificationService.confirmEmailVerification(token);
 
         if (ctx && becameNativeAdmin && ctx.user.id === userId) {
-            await flash(toast('success', 'Pronto! A administração do Taskon está ativa.'));
+            await flash(toast('success', 'Pronto! A administração da Raia está ativa.'));
 
             redirect('/admin');
         }

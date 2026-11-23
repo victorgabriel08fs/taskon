@@ -1,4 +1,4 @@
-# Boas práticas — Taskon
+# Boas práticas — Raia
 
 Guia de como este projeto é escrito e por quê. Não é um manual genérico de
 Next.js/React: cada regra aqui aponta para um arquivo real do repositório.
@@ -7,7 +7,7 @@ Se for mexer no código, leia isto antes.
 Instalação, comandos, variáveis e o passo a passo do deploy estão no
 [README](README.md). Aqui fica o porquê.
 
-O Taskon nasceu em Laravel 13 + Inertia e foi migrado para Next.js sem mudar o
+A Raia nasceu em Laravel 13 + Inertia e foi migrada para Next.js sem mudar o
 produto: as regras de negócio vieram junto, a tecnologia é que trocou. Quando
 um comentário do código diz "o antigo `X`", `X` é a peça do Laravel que aquela
 substituiu.
@@ -1095,7 +1095,7 @@ pelo mesmo motivo.
   Convidar também manda e-mail para um endereço digitado por alguém — daí o teto
   por hora, e o envio dentro da transação: se o e-mail não sai, nenhum convite
   fica pendente (nem o link de um reenvio anterior é invalidado).
-- **Admin do Taskon exige prova, e bloqueio vale na hora** (seção 16). O e-mail
+- **Admin da Raia exige prova, e bloqueio vale na hora** (seção 16). O e-mail
   do admin nativo está no código público, então ele só vale com o e-mail
   confirmado (link de confirmação ou redefinição de senha). Bloquear apaga
   todas as sessões da conta, e `currentSession` recusa sessão de conta
@@ -1858,10 +1858,10 @@ diz algo no card, nada num prompt.
 
 ---
 
-## 16. Administração do Taskon
+## 16. Administração da Raia
 
 O painel [`/admin`](src/app/(app)/admin/page.tsx) é de quem administra o
-**Taskon inteiro** — não confundir com o papel "admin" de um quadro
+**Raia inteira** — não confundir com o papel "admin" de um quadro
 (`board_user.role`). Quem pode o quê mora numa política pura,
 [`src/server/policies/admin.ts`](src/server/policies/admin.ts): o serviço
 ([`admin.ts`](src/server/services/admin.ts)) a confere em toda operação, e a

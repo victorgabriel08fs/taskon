@@ -52,7 +52,7 @@ export function emailVerificationMail({
     const address = escapeHtml(email);
     const href = escapeHtml(url);
 
-    const subject = `Confirme seu e-mail no ${config.appName}`;
+    const subject = `Confirme seu e-mail na ${config.appName}`;
 
     const html = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -153,7 +153,7 @@ export function emailVerificationMail({
     const text = [
         `Olá, ${firstName}.`,
         '',
-        `Para confirmar o endereço ${email} na sua conta do ${config.appName}, abra o link abaixo. Ele vale por ${validity} e só funciona uma vez:`,
+        `Para confirmar o endereço ${email} na sua conta da ${config.appName}, abra o link abaixo. Ele vale por ${validity} e só funciona uma vez:`,
         url,
         '',
         'Não foi você que pediu? Alguém pode ter criado uma conta com o seu endereço. Não abra o link — e, se quiser assumir a conta, use "Esqueci a senha" na tela de entrada.',

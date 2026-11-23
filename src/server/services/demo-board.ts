@@ -69,7 +69,7 @@ const BLUEPRINT: { title: string; cards: BlueprintCard[] }[] = [
     },
     {
         title: DONE_LIST,
-        cards: [{ title: 'Instalar o Taskon localmente', labels: ['Backend'], dueInDays: null }],
+        cards: [{ title: 'Instalar a Raia localmente', labels: ['Backend'], dueInDays: null }],
     },
 ];
 
@@ -212,7 +212,7 @@ export async function buildDemoBoard(
         await tx.insert(comments).values({
             cardId: tourCardId,
             userId: user.id,
-            body: 'Bem-vindo ao Taskon! Este é um comentário de exemplo — pode apagar.',
+            body: 'Bem-vindo à Raia! Este é um comentário de exemplo — pode apagar.',
         });
 
         await logActivity(

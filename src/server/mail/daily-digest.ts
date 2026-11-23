@@ -279,7 +279,7 @@ function preheader(digest: TaskDigest): string {
     if (digest.overdue.length > 0) return `${digest.overdue.length} tarefa(s) passaram do prazo. Vamos limpar isso?`;
     if (digest.today.length > 0) return 'O que precisa da sua atenção hoje.';
 
-    return 'Suas próximas entregas no Taskon.';
+    return 'Suas próximas entregas na Raia.';
 }
 
 /** A frase sob o "Bom dia" — a mesma escada de urgência do assunto. */
@@ -456,7 +456,7 @@ export function digestHtml(digest: TaskDigest): string {
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                     <tr>
                         <td style="font-family:${FONT}; font-size:17px; font-weight:700; color:#ffffff; letter-spacing:-0.2px;">
-                            Taskon
+                            Raia
                         </td>
                         <td align="right" style="font-family:${FONT}; font-size:12px; color:rgba(255,255,255,0.75);">
                             ${formatLongDate(now)}
@@ -502,7 +502,7 @@ ${sectionRows}${completed}
             <td style="padding:26px 28px 30px;">
                 <div style="height:1px; background-color:#e6e9ef; font-size:0; line-height:0;">&nbsp;</div>
                 <p style="margin:16px 0 0; font-family:${FONT}; font-size:12px; line-height:1.6; color:#94a3b8;">
-                    Você recebe este resumo uma vez por dia porque tem cards atribuídos no Taskon.
+                    Você recebe este resumo uma vez por dia porque tem cards atribuídos na Raia.
                     <a href="${escapeHtml(settingsUrl)}" style="color:#7c3aed; text-decoration:underline;">Prefere não receber?</a>
                 </p>
             </td>
@@ -526,7 +526,7 @@ ${sectionRows}${completed}
 export function digestText(digest: TaskDigest): string {
     const { now } = digest;
     const lines: string[] = [
-        `Taskon · ${formatLongDate(now)}`,
+        `Raia · ${formatLongDate(now)}`,
         '',
         `Bom dia, ${firstName(digest.user.name)}.`,
         intro(digest),
@@ -564,7 +564,7 @@ export function digestText(digest: TaskDigest): string {
         '',
         `Abrir o painel: ${appUrl('/dashboard')}`,
         '',
-        'Você recebe este resumo uma vez por dia porque tem cards atribuídos no Taskon.',
+        'Você recebe este resumo uma vez por dia porque tem cards atribuídos na Raia.',
         `Prefere não receber? ${appUrl('/settings/notifications')}`,
     );
 
