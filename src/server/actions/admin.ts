@@ -20,7 +20,7 @@ export const grantAdmin = defineAction(
     async ({ userId }, { user }) => {
         const { name } = await refreshOnRefusal(adminService.grantAdmin(user, userId));
 
-        return ok(null, toast('success', `Agora ${name} é admin do Taskon.`));
+        return ok(null, toast('success', `Agora ${name} é admin da Raia.`));
     },
 ) satisfies AdminActions['grantAdmin'];
 

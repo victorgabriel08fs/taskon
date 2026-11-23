@@ -74,8 +74,8 @@ export function PasskeySettings({ passkeys, webauthn_user_id, max }: PasskeySett
                                         title: `Remover a passkey "${passkey.name}"?`,
                                         description:
                                             passkeys.length === 1
-                                                ? 'Ela deixa de entrar no Taskon. Você continua entrando com a senha.'
-                                                : 'Ela deixa de entrar no Taskon. As outras continuam valendo.',
+                                                ? 'Ela deixa de entrar na Raia. Você continua entrando com a senha.'
+                                                : 'Ela deixa de entrar na Raia. As outras continuam valendo.',
                                         confirmLabel: 'Remover passkey',
                                         onConfirm: () => void runAction(() => deletePasskey({ passkeyId: passkey.id })),
                                     })
@@ -103,7 +103,7 @@ export function PasskeySettings({ passkeys, webauthn_user_id, max }: PasskeySett
                 <ShieldCheck className="mt-0.5 size-4 shrink-0" />
                 <p>
                     A passkey fica no aparelho (ou no gerenciador de senhas dele) e só funciona neste site — um site falso
-                    não consegue usá-la. O Taskon guarda só a parte pública dela.
+                    não consegue usá-la. A Raia guarda só a parte pública dela.
                 </p>
             </div>
 

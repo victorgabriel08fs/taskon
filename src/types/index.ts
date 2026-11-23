@@ -300,12 +300,12 @@ export interface AuthUser {
     avatar_color: AvatarColor;
     title: string | null;
     email_verified_at: string | null;
-    /** Acesso à administração do Taskon (o painel /admin). */
+    /** Acesso à administração da Raia (o painel /admin). */
     admin: AdminAccess;
 }
 
 /**
- * Quanto a pessoa manda na administração do Taskon — NÃO é o papel dela num
+ * Quanto a pessoa manda na administração da Raia — NÃO é o papel dela num
  * quadro (BoardRole):
  *  - 'native'  → admin nativo (e-mail da lista, já confirmado): tudo, e ninguém mexe nele;
  *  - 'admin'   → admin concedido: bloqueia e desbloqueia contas comuns;

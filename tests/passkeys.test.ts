@@ -72,7 +72,7 @@ vi.mock('next/headers', () => ({
 vi.mock('next/cache', () => ({ refresh: vi.fn() }));
 
 const ORIGIN = 'https://taskon.test';
-const RP: RelyingParty = { id: 'taskon.test', name: 'Taskon', origin: ORIGIN };
+const RP: RelyingParty = { id: 'taskon.test', name: 'Raia', origin: ORIGIN };
 const IP = '203.0.113.7';
 const CHROME_WINDOWS = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36';
 const NOW = new Date('2026-10-20T15:00:00Z');
@@ -144,7 +144,7 @@ describe('cadastrar passkey', () => {
 
         const { options, passkey } = await register(user);
 
-        expect(options.rp).toEqual({ id: 'taskon.test', name: 'Taskon' });
+        expect(options.rp).toEqual({ id: 'taskon.test', name: 'Raia' });
         expect(options.user).toMatchObject({ name: 'ana@taskon.test', displayName: 'Ana Lima' });
         expect(options.authenticatorSelection).toMatchObject({ residentKey: 'required', userVerification: 'required' });
         expect(options.attestation).toBe('none');

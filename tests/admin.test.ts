@@ -738,7 +738,7 @@ describe('as actions', () => {
 
         await signIn(native);
 
-        expect(await grantAdminAction({ userId: ana.id })).toEqual(success('Agora Ana Souza é admin do Taskon.'));
+        expect(await grantAdminAction({ userId: ana.id })).toEqual(success('Agora Ana Souza é admin da Raia.'));
         expect(await revokeAdminAction({ userId: ana.id })).toEqual(success('Ana Souza não é mais admin.'));
         expect(await blockUserAction({ userId: ana.id })).toEqual(
             success('Ana Souza foi bloqueado(a) — as sessões abertas caíram.'),

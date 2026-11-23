@@ -1,6 +1,7 @@
 'use client';
 
-import { CalendarCheck2, Clock3 } from 'lucide-react';
+import { Clock3 } from 'lucide-react';
+import { RaiaEmpty } from '@/components/brand';
 import { motion } from 'motion/react';
 import Link from 'next/link';
 import { boardBackgroundClass } from '@/lib/palette';
@@ -19,9 +20,7 @@ export function DeadlineList({ deadlines }: { deadlines: Deadline[] }) {
     if (deadlines.length === 0) {
         return (
             <div className="grid place-items-center gap-2 py-10 text-center">
-                <span className="grid size-11 place-items-center rounded-full bg-success/12 text-success">
-                    <CalendarCheck2 className="size-5" />
-                </span>
+                <RaiaEmpty />
                 <p className="text-sm font-medium">Nenhum prazo à vista.</p>
                 <p className="max-w-[16rem] text-xs text-muted-fg">
                     Tarefas com data de entrega atribuídas a você aparecem aqui.

@@ -1,6 +1,7 @@
 'use client';
 
 import { Archive, ArchiveRestore, CalendarClock, CircleCheckBig } from 'lucide-react';
+import { RaiaEmpty } from '@/components/brand';
 import { AnimatePresence, motion } from 'motion/react';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
@@ -167,13 +168,14 @@ export function ArchivedModal({ open, board, config, onClose }: ArchivedModalPro
                     {cards === undefined ? (
                         <ul className="space-y-2">
                             {Array.from({ length: 4 }).map((_, index) => (
-                                <li key={index} className="h-14 animate-pulse rounded-lg bg-surface-2" />
+                                <li key={index} className="raia-skeleton h-14 rounded-lg" />
                             ))}
                         </ul>
                     ) : cards.length === 0 ? (
-                        <p className="py-12 text-center text-sm text-muted-fg">
-                            A gaveta está vazia — nenhum card saiu do quadro ainda.
-                        </p>
+                        <div className="grid place-items-center gap-3 py-12 text-center">
+                            <RaiaEmpty />
+                            <p className="text-sm text-muted-fg">A gaveta está vazia — nenhum card saiu do quadro ainda.</p>
+                        </div>
                     ) : (
                         <>
                             <ul className="space-y-2">

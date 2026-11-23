@@ -39,7 +39,7 @@ export function AdminActivation({ expiresInMinutes }: { expiresInMinutes: number
                     </h1>
                     <p className="mt-2 text-sm text-muted-fg">
                         <span className="break-all font-medium text-foreground">{user.email}</span> é um e-mail de admin
-                        nativo do Taskon. Antes de abrir o painel, confirme que essa caixa de entrada é sua.
+                        nativo da Raia. Antes de abrir o painel, confirme que essa caixa de entrada é sua.
                     </p>
 
                     <div className="mt-5 rounded-lg bg-surface-2 p-4 text-sm">

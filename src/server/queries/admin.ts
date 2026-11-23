@@ -110,7 +110,7 @@ function usersPage(where: SQL | undefined, page: number) {
                 .mapWith(sessions.lastActivityAt) as SQL<Date | null>,
 
             // Toda participação conta, inclusive em quadro arquivado: é o
-            // tamanho da presença da conta no Taskon, não a tela de quadros dela.
+            // tamanho da presença da conta na Raia, não a tela de quadros dela.
             boardsCount: db.$count(boardUser, eq(boardUser.userId, users.id)),
         })
         .from(users)

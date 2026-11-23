@@ -41,7 +41,7 @@ export function passwordResetMail({
     const app = escapeHtml(config.appName);
     const href = escapeHtml(url);
 
-    const subject = `Redefina sua senha do ${config.appName}`;
+    const subject = `Redefina sua senha da ${config.appName}`;
 
     const html = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -140,7 +140,7 @@ export function passwordResetMail({
     const text = [
         `Olá, ${firstName}.`,
         '',
-        `Recebemos um pedido para redefinir a senha da sua conta no ${config.appName}.`,
+        `Recebemos um pedido para redefinir a senha da sua conta na ${config.appName}.`,
         '',
         `Para escolher uma senha nova, abra o link abaixo. Ele vale por ${validity} e só funciona uma vez:`,
         url,

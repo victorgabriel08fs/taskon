@@ -3,10 +3,9 @@ import { Welcome } from '@/components/auth/welcome';
 import { config } from '@/server/config';
 
 export const metadata: Metadata = {
-    // O `title.template` ("%s · Taskon") do layout raiz só vale para os
-    // segmentos FILHOS, não para a página do mesmo segmento: aqui o sufixo vai
-    // à mão, para a aba continuar "… · Taskon" como no legado.
-    title: { absolute: `Organize qualquer coisa, arrastando · ${config.appName}` },
+    // O `title.template` ("%s · Raia") do layout raiz só vale para os
+    // segmentos FILHOS: aqui o título vai inteiro, com o slogan da marca.
+    title: { absolute: `${config.appName} · Cada tarefa na sua raia.` },
 };
 
 /**

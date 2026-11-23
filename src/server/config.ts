@@ -58,7 +58,7 @@ export const AVATAR_COLORS = [
 ] as const satisfies readonly AvatarColor[];
 
 export const config = {
-    appName: env('APP_NAME') ?? 'Taskon',
+    appName: env('APP_NAME') ?? 'Raia',
 
     limits: {
         activitiesPerBoard: 60,
@@ -140,7 +140,7 @@ export const config = {
     },
 
     /**
-     * Administração do Taskon (/admin).
+     * Administração da Raia (/admin).
      *
      * O admin NATIVO é a conta cujo e-mail está nesta lista — e só depois de
      * ela provar que o e-mail é dela (link de confirmação ou redefinição de

@@ -45,7 +45,7 @@ export function boardInvitationMail({
     const app = escapeHtml(config.appName);
     const href = escapeHtml(url);
 
-    const subject = `${who} convidou você para o quadro "${boardTitle}" no ${config.appName}`;
+    const subject = `${who} convidou você para o quadro "${boardTitle}" na ${config.appName}`;
 
     const html = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -143,7 +143,7 @@ export function boardInvitationMail({
 </html>`;
 
     const text = [
-        `${who} convidou você para entrar como ${roleLabel} no quadro "${boardTitle}" no ${config.appName}.`,
+        `${who} convidou você para entrar como ${roleLabel} no quadro "${boardTitle}" na ${config.appName}.`,
         '',
         `Para aceitar, abra o link abaixo e crie sua conta (ou entre com a que você já tem). Ele vale por ${validity}:`,
         url,

@@ -6,7 +6,7 @@ import { StatCard } from '@/components/dashboard/stat-card';
 import type { AdminStats } from '@/types';
 
 /**
- * Os números do Taskon inteiro, com o mesmo cartão do painel (/dashboard): o
+ * Os números da Raia inteira, com o mesmo cartão do painel (/dashboard): o
  * número sobe ao aparecer e, depois de uma ação, anda do valor velho para o
  * novo — bloquear alguém faz o "Bloqueados" contar mais um na frente da pessoa.
  */
@@ -41,7 +41,7 @@ export function AdminStatsGrid({ stats }: { stats: AdminStats }) {
                 label="Bloqueados"
                 value={stats.blocked}
                 icon={<Ban className="size-4.5" />}
-                hint={stats.blocked === 0 ? 'Ninguém bloqueado' : 'Sem acesso ao Taskon'}
+                hint={stats.blocked === 0 ? 'Ninguém bloqueado' : 'Sem acesso à Raia'}
             />
             <StatCard
                 index={3}

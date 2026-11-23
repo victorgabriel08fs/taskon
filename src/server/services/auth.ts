@@ -25,7 +25,7 @@ import { markEmailVerified } from '@/server/services/email-verification';
 
 export const AUTH_MESSAGES = {
     failed: 'Essas credenciais não batem com nossos registros.',
-    blocked: 'Esta conta foi bloqueada por um administrador do Taskon.',
+    blocked: 'Esta conta foi bloqueada por um administrador da Raia.',
     emailTaken: 'Esse e-mail já está em uso.',
     unknownEmail: 'Não encontramos uma conta com esse e-mail.',
     resetLinkSent: 'Enviamos por e-mail o link para redefinir sua senha.',
