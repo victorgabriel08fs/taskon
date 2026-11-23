@@ -413,3 +413,267 @@
         animation: none !important;
     }
 }
+
+/* ---------------------------------------------------------------------------
+ | Marca · animações pelo app (docs/identidade-visual.md, "Animações da marca")
+ |
+ | Tudo nasce do símbolo: colunas que descem do topo (raias), o pingo lima que
+ | marca a posição e a faixa lima que corre a raia quando algo termina. Só
+ | transform e opacity; com prefers-reduced-motion, nada se move (bloco no
+ | fim). As entradas usam fill-mode `backwards` para soltar o transform ao
+ | terminar — cards e colunas também levam o transform do arraste (dnd-kit).
+ --------------------------------------------------------------------------- */
+
+:root {
+    --raia-lime: #c6f135;
+    /* Pingo e traços finos sobre fundo claro: a lima escura da marca. */
+    --raia-ink: #4a6100;
+    --raia-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --raia-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dark {
+    --raia-ink: #c6f135;
+}
+
+/* Loader: as três colunas do símbolo sobem e descem em sequência. É o único
+   loop da marca, e só enquanto algo carrega. */
+@keyframes raia-load {
+    0%,
+    100% {
+        transform: scaleY(0.25);
+    }
+    45% {
+        transform: scaleY(1);
+    }
+}
+
+.raia-loader .brand-col > rect {
+    animation: raia-load 1.1s var(--raia-ease) infinite;
+}
+
+.raia-loader .brand-col:nth-of-type(2) > rect {
+    animation-delay: 0.14s;
+}
+
+.raia-loader .brand-col:nth-of-type(3) > rect {
+    animation-delay: 0.28s;
+}
+
+/* Esqueleto: em vez de piscar, uma faixa clara corre a raia de cima a baixo. */
+@keyframes raia-sweep {
+    from {
+        transform: translateY(-100%);
+    }
+    to {
+        transform: translateY(100%);
+    }
+}
+
+.raia-skeleton {
+    position: relative;
+    overflow: hidden;
+    background-color: var(--surface-3);
+}
+
+.raia-skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent, color-mix(in oklch, var(--raia-lime) 22%, transparent), transparent);
+    animation: raia-sweep 1.4s var(--raia-ease) infinite;
+}
+
+/* Largada das colunas do quadro: descem do topo, uma depois da outra. */
+@keyframes raia-drop {
+    from {
+        transform: translateY(-14px) scaleY(0.92);
+        opacity: 0;
+    }
+}
+
+.raia-col-in {
+    transform-origin: top;
+    animation: raia-drop 520ms var(--raia-ease) backwards;
+    animation-delay: calc(min(var(--i, 0), 8) * 70ms);
+}
+
+/* Card entrando na raia (abrir o quadro, criar, soltar noutra coluna). */
+@keyframes raia-card-in {
+    from {
+        transform: translateY(-8px);
+        opacity: 0;
+    }
+}
+
+.raia-card-in {
+    animation: raia-card-in 300ms var(--raia-ease) backwards;
+    animation-delay: calc(min(var(--i, 0), 8) * 35ms + 120ms);
+}
+
+/* Card concluído: a faixa lima corre a raia, da esquerda para a direita, e o
+   pingo cai no canto. */
+@keyframes raia-finish {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes raia-pingo {
+    0% {
+        transform: translateY(-18px) scale(0.6);
+        opacity: 0;
+    }
+    60% {
+        transform: translateY(0) scale(1.15);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 0;
+    }
+}
+
+.raia-complete::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, color-mix(in oklch, var(--raia-lime) 55%, transparent) 60%, transparent);
+    animation: raia-finish 700ms var(--raia-ease) forwards;
+}
+
+.raia-complete::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 1;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    pointer-events: none;
+    background: var(--raia-lime);
+    animation: raia-pingo 900ms var(--raia-bounce) 250ms both;
+}
+
+/* Vazio: três raias tracejadas e o pingo que cai na primeira. */
+@keyframes raia-empty-dot {
+    from {
+        transform: translateY(-160%);
+        opacity: 0;
+    }
+}
+
+@keyframes raia-empty-lane {
+    from {
+        transform: scaleY(0);
+    }
+}
+
+.raia-empty .lane {
+    transform-box: fill-box;
+    transform-origin: top;
+    animation: raia-empty-lane 520ms var(--raia-ease) backwards;
+}
+
+.raia-empty .lane:nth-of-type(2) {
+    animation-delay: 80ms;
+}
+
+.raia-empty .lane:nth-of-type(3) {
+    animation-delay: 160ms;
+}
+
+.raia-empty .pingo {
+    transform-box: fill-box;
+    fill: var(--raia-ink);
+    animation: raia-empty-dot 560ms var(--raia-bounce) 420ms backwards;
+}
+
+/* 404: a terceira coluna sai da raia e o pingo rola para fora. */
+@keyframes raia-lost-col {
+    to {
+        transform: translate(10px, 18px) rotate(32deg);
+        opacity: 0.35;
+    }
+}
+
+.raia-lost .brand-col:nth-of-type(3) > rect {
+    transform-box: fill-box;
+    transform-origin: bottom left;
+    animation: raia-lost-col 700ms var(--raia-bounce) 500ms forwards;
+}
+
+/* Toasts: a raia lima desce pela borda esquerda ao chegar. */
+@keyframes raia-toast-lane {
+    from {
+        transform: scaleY(0);
+    }
+}
+
+[data-sonner-toast]::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10px;
+    bottom: 10px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--raia-lime);
+    transform-origin: top;
+    animation: raia-toast-lane 420ms var(--raia-ease) 80ms backwards;
+}
+
+/* Barra de navegação: o pingo lima vai na ponta. */
+.nav-progress-grow {
+    position: relative;
+}
+
+.nav-progress-grow::after {
+    content: '';
+    position: absolute;
+    right: -3px;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--raia-lime);
+    transform: translateY(-50%);
+}
+
+/* Barra de progresso: enche como uma coluna, com o pingo na ponta. */
+@keyframes raia-fill {
+    from {
+        transform: scaleX(0);
+    }
+}
+
+.raia-fill {
+    transform-origin: left;
+    animation: raia-fill 900ms var(--raia-ease) 200ms backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .raia-loader .brand-col > rect,
+    .raia-skeleton::after,
+    .raia-col-in,
+    .raia-card-in,
+    .raia-complete::before,
+    .raia-complete::after,
+    .raia-empty .lane,
+    .raia-empty .pingo,
+    .raia-lost .brand-col > rect,
+    [data-sonner-toast]::after,
+    .raia-fill {
+        animation: none !important;
+    }
+
+    .raia-complete::before,
+    .raia-complete::after {
+        display: none;
+    }
+}

@@ -99,7 +99,17 @@ Ligadas às formas e cores do símbolo, como no Prumo: tocam uma vez, partem de 
 
 - **Largada** (`<Logo animated />`, na home e nas telas de entrada): as três colunas descem do topo em sequência, a lima primeiro (500 ms cada, 90 ms entre elas), e o pingo lima do `i` cai por último, como o sinal de largada.
 - **Passo** (hover no logo): as colunas avançam uma posição e voltam (360 ms), uma vez por passagem do mouse.
-- Tempos e curvas ficam só em `src/app/globals.css` (bloco "Marca"). Próximas: card concluído deslizando pela raia e o fio lima acompanhando a rolagem da home.
+- **Carregando** (`<RaiaLoader />`): as três colunas sobem e descem em sequência. É o único loop da marca, e só enquanto algo carrega (painel, quadros).
+- **Esqueleto** (`.raia-skeleton`): no lugar do pulso, uma faixa lima clara corre a raia de cima a baixo.
+- **Largada do quadro**: ao abrir, as colunas descem do topo uma depois da outra (70 ms entre elas) e os cards entram na raia logo em seguida.
+- **Chegada**: card criado ou solto em outra coluna entra descendo na raia.
+- **Concluído**: quando o card conclui, a faixa lima corre o card da esquerda para a direita e o pingo cai no canto. Só na mudança, nunca ao abrir o quadro.
+- **Vazio** (`<RaiaEmpty />`): três raias tracejadas descem e o pingo cai na primeira (coluna sem cards, gaveta de arquivados, painel sem prazos ou quadros).
+- **Toast**: a raia lima desce pela borda esquerda ao chegar.
+- **Navegação**: a barra de progresso leva o pingo lima na ponta.
+- **Progresso**: a barra do cartão do quadro enche como uma coluna.
+- **404**: a terceira coluna sai da raia.
+- Tempos e curvas ficam só em `src/app/globals.css` (blocos "Marca"). Próximas: o fio lima acompanhando a rolagem da home.
 
 ## 6. Próximas etapas
 

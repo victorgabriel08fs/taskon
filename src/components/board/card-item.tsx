@@ -3,7 +3,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { AlignLeft, CalendarClock, Check, CheckSquare, MessageSquare } from 'lucide-react';
-import { useRef } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Avatar } from '@/components/ui/avatar';
 import { COLOR_CHIP, COLOR_SOLID } from '@/lib/palette';
 import { cn, dueState, formatDate, type DueState } from '@/lib/utils';
@@ -38,6 +38,8 @@ interface CardItemProps {
     selectMode?: boolean;
     selected?: boolean;
     onToggleSelect?: (card: Card) => void;
+    /** Posição na coluna: escalona a entrada do card na raia. */
+    index?: number;
 }
 
 export function CardItem({
@@ -48,6 +50,7 @@ export function CardItem({
     selectMode = false,
     selected = false,
     onToggleSelect,
+    index = 0,
 }: CardItemProps) {
     // No modo seleção o arraste sai de cena: um card que se move enquanto a
     // pessoa marca dez seguidos é acidente, não gesto.
@@ -67,6 +70,25 @@ export function CardItem({
     const due = dueState(card.due_at, card.completed_at);
     const checklistDone = card.checklist_total > 0 && card.checklist_done === card.checklist_total;
 
+    // Concluiu agora (não na montagem): a faixa lima corre o card uma vez.
+    const wasDone = useRef(Boolean(card.completed_at));
+    const [finishing, setFinishing] = useState(false);
+
+    useEffect(() => {
+        const done = Boolean(card.completed_at);
+
+        if (done && !wasDone.current && !overlay) {
+            setFinishing(true);
+            const timer = window.setTimeout(() => setFinishing(false), 1200);
+
+            wasDone.current = done;
+
+            return () => window.clearTimeout(timer);
+        }
+
+        wasDone.current = done;
+    }, [card.completed_at, overlay]);
+
     return (
         // `div`, e não `article`: o card é um controle (botão ou caixa de
         // seleção), e `article` não aceita esses papéis. O papel vem de uma
@@ -77,10 +99,11 @@ export function CardItem({
             style={
                 overlay
                     ? undefined
-                    : {
+                    : ({
                           transform: CSS.Translate.toString(transform),
                           transition,
-                      }
+                          '--i': index,
+                      } as CSSProperties)
             }
             {...(inert ? {} : attributes)}
             {...(inert ? {} : listeners)}
@@ -137,6 +160,8 @@ export function CardItem({
                 // touch-manipulation (e não touch-none): no celular o dedo continua
                 // rolando a coluna; o arraste começa com toque longo.
                 'group relative cursor-pointer touch-manipulation select-none overflow-hidden rounded-lg bg-surface',
+                !overlay && 'raia-card-in',
+                finishing && 'raia-complete',
                 'ring-1 ring-border shadow-sm',
                 'transition-[box-shadow,transform,opacity] duration-150 ease-out',
                 'hover:-translate-y-0.5 hover:shadow-md hover:ring-primary/40',

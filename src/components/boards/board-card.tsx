@@ -66,7 +66,7 @@ export function BoardCard({ board, index }: { board: BoardSummary; index: number
 
                     <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-3">
                         <div
-                            className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-[width] duration-700 ease-out"
+                            className="raia-fill h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-[width] duration-700 ease-out"
                             style={{ width: `${progress}%` }}
                         />
                     </div>

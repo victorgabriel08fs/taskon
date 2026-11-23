@@ -4,9 +4,10 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Check, CircleCheckBig, GripVertical, Minus, MoreHorizontal, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { AddCard } from '@/components/board/add-card';
 import { CardItem } from '@/components/board/card-item';
+import { RaiaEmpty } from '@/components/brand';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverItem } from '@/components/ui/popover';
 import { runAction } from '@/lib/actions';
@@ -48,6 +49,8 @@ interface ListColumnProps {
     selected: Set<number>;
     onToggleCard: (card: Card) => void;
     onToggleList: (cards: Card[]) => void;
+    /** Posição no quadro: escalona a largada das colunas. */
+    index?: number;
 }
 
 export function ListColumn({
@@ -61,6 +64,7 @@ export function ListColumn({
     selected,
     onToggleCard,
     onToggleList,
+    index = 0,
 }: ListColumnProps) {
     const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
         id: `list:${list.id}`,
@@ -104,9 +108,9 @@ export function ListColumn({
     return (
         <div
             ref={setNodeRef}
-            style={{ transform: CSS.Translate.toString(transform), transition }}
+            style={{ transform: CSS.Translate.toString(transform), transition, '--i': index } as CSSProperties}
             className={cn(
-                'group/col flex max-h-full w-[19rem] shrink-0 flex-col rounded-xl bg-surface-2/95 shadow-lg ring-1 ring-black/5 backdrop-blur-sm',
+                'raia-col-in group/col flex max-h-full w-[19rem] shrink-0 flex-col rounded-xl bg-surface-2/95 shadow-lg ring-1 ring-black/5 backdrop-blur-sm',
                 'dark:bg-surface/90',
                 isDragging && 'opacity-40',
                 isOver && 'ring-2 ring-primary/60',
@@ -237,7 +241,7 @@ export function ListColumn({
                 className="min-h-[3rem] flex-1 space-y-2 overflow-y-auto overscroll-contain px-2 py-2"
             >
                 <SortableContext items={cards.map((card) => `card:${card.id}`)} strategy={verticalListSortingStrategy}>
-                    {cards.map((card) => (
+                    {cards.map((card, cardIndex) => (
                         <CardItem
                             key={card.id}
                             card={card}
@@ -246,14 +250,16 @@ export function ListColumn({
                             selectMode={selectMode}
                             selected={selected.has(card.id)}
                             onToggleSelect={onToggleCard}
+                            index={cardIndex}
                         />
                     ))}
                 </SortableContext>
 
                 {cards.length === 0 && (
-                    <p className="rounded-lg border border-dashed border-border/70 px-3 py-6 text-center text-xs text-muted-fg">
+                    <div className="grid place-items-center gap-2 rounded-lg border border-dashed border-border/70 px-3 py-5 text-center text-xs text-muted-fg">
+                        {!filtered && <RaiaEmpty className="h-8" />}
                         {filtered ? 'Nada corresponde ao filtro' : 'Solte um card aqui'}
-                    </p>
+                    </div>
                 )}
             </div>
 
