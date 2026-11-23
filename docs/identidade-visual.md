@@ -14,7 +14,9 @@ Sóbrio e focado. O Taskon é ferramenta de trabalho diário: o fundo grafite so
 ## 2. Símbolo e logotipo
 
 - **Símbolo** (`docs/marca/taskon-simbolo.svg`, grade de 64): quadrado grafite de cantos 14 com três colunas que descem da esquerda para a direita, como um quadro em andamento. A primeira é lima (o que está acontecendo), a segunda off-white e a terceira off-white a 50%.
-- **Logotipo**: o símbolo seguido de `taskon` em minúsculas, Geist 600, `letter-spacing: -0.02em`, altura do x igual a metade do símbolo, espaço entre os dois igual a um quarto do símbolo.
+- **Nome** (`taskon-nome-escuro.svg` e `taskon-nome-claro.svg`): `taskon` desenhado em minúsculas, traço único de 10 na grade do símbolo, terminais arredondados como os cantos das colunas. Não é fonte digitada: use sempre o SVG.
+- **Logotipo** (`taskon-logo-escuro.svg` e `taskon-logo-claro.svg`): símbolo seguido do nome. A altura do x vai do topo das colunas ao pé da coluna lima (metade do símbolo), e o espaço entre os dois é um quarto do símbolo. No app: `<Logo />` em `src/components/logo.tsx`.
+- **Aplicação**: nome em off-white `#F4F5F0` sobre escuro e grafite `#1E2327` sobre claro. Favicon, ícones do PWA e `apple-touch-icon` saem do símbolo (os de tela cheia, da versão maskable).
 - **Variações**: maskable (`taskon-simbolo-maskable.svg`, símbolo a 78% dentro da zona segura, fundo sem cantos) e monocromático (`taskon-monocromatico.svg`, só as colunas, para badge e `monochrome` do manifesto).
 - **Não fazer**: girar, trocar a cor das colunas, pôr a coluna lima em outra posição, aplicar sobre foto ou gradiente.
 
