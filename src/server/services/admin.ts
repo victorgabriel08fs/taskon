@@ -8,7 +8,7 @@ import { HttpError } from '@/server/errors';
 import { adminAccess, adminCan, isNativeAdminEmail, type AdminSubject } from '@/server/policies/admin';
 
 /**
- * A administração do Taskon: conceder e tirar admin, bloquear e desbloquear
+ * A administração da Raia: conceder e tirar admin, bloquear e desbloquear
  * contas — o que o painel /admin faz.
  *
  * Quem pode o quê é a tabela de src/server/policies/admin.ts. Este serviço
@@ -42,7 +42,7 @@ const EVENTS = {
 /** As recusas, que viram toast. Exportadas para os testes conferirem o texto. */
 export const ADMIN_MESSAGES = {
     /** Admin nativo que ainda não confirmou o e-mail: a tela de ativação explica o resto. */
-    pending: 'Confirme o seu e-mail para ativar a administração do Taskon.',
+    pending: 'Confirme o seu e-mail para ativar a administração da Raia.',
     notFound: 'Essa conta não existe mais.',
     self: 'Você não pode alterar a própria conta pelo painel.',
     nativeTarget: {

@@ -36,14 +36,14 @@ export default function GlobalError({ error, retry }: { error: Error & { digest?
     return (
         <html lang="pt-BR" className={dark ? 'dark' : undefined} suppressHydrationWarning>
             <body className="font-sans antialiased">
-                <title>Algo deu errado · Taskon</title>
+                <title>Algo deu errado · Raia</title>
 
                 <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-background px-6 text-center">
                     <span className="grid size-14 place-items-center rounded-2xl bg-danger/12 text-danger">
                         <TriangleAlert className="size-7" />
                     </span>
                     <div className="space-y-1">
-                        <h1 className="text-xl font-semibold">O Taskon não abriu</h1>
+                        <h1 className="text-xl font-semibold">A Raia não abriu</h1>
                         <p className="max-w-sm text-sm text-muted-fg">
                             Algo deu errado do nosso lado. Tente de novo em instantes.
                         </p>

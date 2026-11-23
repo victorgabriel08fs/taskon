@@ -52,7 +52,7 @@ describe('buildDemoBoard', () => {
         expect(members[0]?.lastOpenedAt).toBeInstanceOf(Date);
     });
 
-    it('aceita outro título (o seed usa "Lançamento do Taskon" e "Pessoal")', async () => {
+    it('aceita outro título (o seed usa "Lançamento da Raia" e "Pessoal")', async () => {
         const user = await createUser();
         const board = await buildDemoBoard(user, 'Pessoal');
 
@@ -130,7 +130,7 @@ describe('buildDemoBoard', () => {
             { title: 'Criar etiquetas do time', list: 'A fazer', position: 2 },
             { title: 'Configurar backup do banco', list: 'A fazer', position: 3 },
             { title: 'Arrastar e soltar entre colunas', list: 'Em andamento', position: 1 },
-            { title: 'Instalar o Taskon localmente', list: 'Concluído', position: 1 },
+            { title: 'Instalar a Raia localmente', list: 'Concluído', position: 1 },
         ]);
 
         const byTitle = new Map(rows.map((row) => [row.title, row]));
@@ -142,7 +142,7 @@ describe('buildDemoBoard', () => {
         expect(byTitle.get('Modo foco com atalho de teclado')?.dueAt).toBeNull();
 
         // Só o card da coluna de conclusão nasce concluído.
-        expect(byTitle.get('Instalar o Taskon localmente')?.completedAt?.getTime()).toBe(now.getTime());
+        expect(byTitle.get('Instalar a Raia localmente')?.completedAt?.getTime()).toBe(now.getTime());
         expect(rows.filter((row) => row.completedAt !== null)).toHaveLength(1);
 
         expect(rows.every((row) => row.createdBy === user.id)).toBe(true);
@@ -170,7 +170,7 @@ describe('buildDemoBoard', () => {
         expect(labelsOf('Exportar quadro em PDF')).toEqual(['Ideia', 'Melhoria']);
         expect(labelsOf('Configurar backup do banco')).toEqual(['Backend', 'Urgente']);
         expect(labelsOf('Arrastar e soltar entre colunas')).toEqual(['Backend', 'Design']);
-        expect(labelsOf('Instalar o Taskon localmente')).toEqual(['Backend']);
+        expect(labelsOf('Instalar a Raia localmente')).toEqual(['Backend']);
     });
 
     it('põe a checklist e o comentário de exemplo no card do tour', async () => {
@@ -206,7 +206,7 @@ describe('buildDemoBoard', () => {
         expect(notes).toHaveLength(1);
         expect(notes[0]).toMatchObject({
             userId: user.id,
-            body: 'Bem-vindo ao Taskon! Este é um comentário de exemplo — pode apagar.',
+            body: 'Bem-vindo à Raia! Este é um comentário de exemplo — pode apagar.',
         });
     });
 
@@ -304,10 +304,10 @@ describe('seedDatabase', () => {
         // no banco, como no DatabaseSeeder (sem ActivityLogger).
         expect(feed).toEqual([
             {
-                board: 'Lançamento do Taskon',
+                board: 'Lançamento da Raia',
                 userId: null,
                 type: 'board.created',
-                description: 'criou o quadro Lançamento do Taskon',
+                description: 'criou o quadro Lançamento da Raia',
             },
             { board: 'Pessoal', userId: null, type: 'board.created', description: 'criou o quadro Pessoal' },
         ]);

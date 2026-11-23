@@ -27,7 +27,7 @@ import { AUTH_MESSAGES } from '@/server/services/auth';
 /**
  * Entrar com passkey (WebAuthn) — o que no meu-finan o plugin de passkey do
  * Better Auth fazia, aqui sobre a mesma biblioteca que ele usa por baixo
- * (SimpleWebAuthn) e a sessão própria do Taskon.
+ * (SimpleWebAuthn) e a sessão própria da Raia.
  *
  * Duas cerimônias, cada uma em duas metades:
  *
@@ -197,7 +197,7 @@ export async function beginPasskeyRegistration(
         timeout: config.passkeys.ceremonyTimeoutMs,
         supportedAlgorithmIDs: ALGORITHMS,
 
-        // Sem atestado: o Taskon não restringe marca de aparelho, e pedir um
+        // Sem atestado: a Raia não restringe marca de aparelho, e pedir um
         // só daria ao navegador um motivo para perguntar se a pessoa autoriza.
         attestationType: 'none',
 

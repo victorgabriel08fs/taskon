@@ -20,7 +20,10 @@ const instrumentSans = Instrument_Sans({
 export const metadata: Metadata = {
     title: { default: config.appName, template: `%s · ${config.appName}` },
     description: 'Quadros, listas e cards para organizar o trabalho do time.',
-    icons: { icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }, { url: '/favicon.ico' }] },
+    icons: {
+        icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }, { url: '/favicon.ico', sizes: '48x48' }],
+        apple: '/apple-touch-icon.png',
+    },
 };
 
 export const viewport: Viewport = {

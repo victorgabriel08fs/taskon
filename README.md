@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="public/favicon.svg" width="72" alt="Taskon">
+  <img src="public/favicon.svg" width="72" alt="Raia">
 </p>
 
-<h1 align="center">Taskon</h1>
+<h1 align="center">Raia</h1>
 
 <p align="center">
   Um clone do Trello, pronto para a Vercel.<br>

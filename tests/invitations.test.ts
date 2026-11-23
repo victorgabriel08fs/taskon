@@ -125,7 +125,7 @@ describe('convidar quem não tem conta', () => {
         expect(result).toEqual({ kind: 'invited', email: 'nova@taskon.test' });
         expect(sentMail).toHaveLength(1);
         expect(sentMail[0]).toMatchObject({ to: 'nova@taskon.test' });
-        expect(sentMail[0]?.subject).toBe('Victor Dono convidou você para o quadro "Lançamento" no Taskon');
+        expect(sentMail[0]?.subject).toBe('Victor Dono convidou você para o quadro "Lançamento" na Raia');
         expect(sentMail[0]?.html).toContain('http://taskon.test/invite/');
 
         const [pending] = await pendingInvitations(board.id);

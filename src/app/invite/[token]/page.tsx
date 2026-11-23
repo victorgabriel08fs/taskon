@@ -33,7 +33,7 @@ export default async function InvitationPage({ params }: { params: Promise<{ tok
                         href={user ? '/boards' : '/'}
                         className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
                     >
-                        {user ? 'Ir para os meus quadros' : 'Conhecer o Taskon'}
+                        {user ? 'Ir para os meus quadros' : 'Conhecer a Raia'}
                     </Link>
                 </div>
             </AuthLayout>

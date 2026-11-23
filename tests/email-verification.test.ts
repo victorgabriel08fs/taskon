@@ -143,7 +143,7 @@ describe('pedir o link', () => {
         const mail = sentMail[0]!;
 
         expect(mail).toMatchObject({ to: 'ana@example.com', toName: 'Ana Souza' });
-        expect(mail.subject).toBe('Confirme seu e-mail no Taskon');
+        expect(mail.subject).toBe('Confirme seu e-mail na Raia');
         expect(mail.html).toContain('Olá, Ana.');
         expect(mail.html).toContain('24 horas');
         expect(mail.text).toContain('http://taskon.test/verify-email/');
@@ -442,7 +442,7 @@ describe('pelas actions', () => {
         await requestEmailVerification();
 
         expect(await redirectOf(confirmEmail({ token: lastToken() }))).toBe('/admin');
-        expect(jar.store.get('taskon_flash')).toContain('Pronto! A administração do Taskon está ativa.');
+        expect(jar.store.get('taskon_flash')).toContain('Pronto! A administração da Raia está ativa.');
         expect(adminAccess(await reload(native))).toBe('native');
     });
 

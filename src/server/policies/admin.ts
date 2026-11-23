@@ -5,7 +5,7 @@ import { config } from '@/server/config';
 import type { UserRow } from '@/server/db/schema';
 
 /**
- * Quem manda na administração do Taskon — a política do painel /admin, no
+ * Quem manda na administração da Raia — a política do painel /admin, no
  * mesmo espírito de src/server/policies/board.ts: regras puras, que o
  * servidor confere em toda action e a tela usa só para esconder botões.
  *

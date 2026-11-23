@@ -500,9 +500,10 @@ export function BoardShow({ board, backgrounds, colors, autoArchive, activity, c
                             items={lists.map((list) => `list:${list.id}`)}
                             strategy={horizontalListSortingStrategy}
                         >
-                            {lists.map((list) => (
+                            {lists.map((list, listIndex) => (
                                 <ListColumn
                                     key={list.id}
+                                    index={listIndex}
                                     list={list}
                                     board={board}
                                     cards={visibleCards.get(list.id) ?? []}

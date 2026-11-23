@@ -111,7 +111,7 @@ describe('login de conta bloqueada', () => {
 
         const error = await expectHttpError(authenticate({ email: user.email, password: 'password' }, IP), 422, 'email');
 
-        expect(error.errors?.email).toBe('Esta conta foi bloqueada por um administrador do Taskon.');
+        expect(error.errors?.email).toBe('Esta conta foi bloqueada por um administrador da Raia.');
         expect(AUTH_MESSAGES.blocked).toBe(error.errors?.email);
     });
 

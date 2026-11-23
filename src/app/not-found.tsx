@@ -1,6 +1,6 @@
-import { SearchX } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { LogoMark } from '@/components/logo';
 import { currentUser } from '@/server/auth/session';
 
 export const metadata: Metadata = {
@@ -17,9 +17,8 @@ export default async function NotFound() {
 
     return (
         <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-background px-6 text-center">
-            <span className="grid size-14 place-items-center rounded-2xl bg-primary-soft text-primary">
-                <SearchX className="size-7" />
-            </span>
+            {/* A terceira coluna sai da raia: "isto aqui saiu do quadro". */}
+            <LogoMark className="raia-lost size-16" />
             <div className="space-y-1">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-fg">Erro 404</p>
                 <h1 className="text-xl font-semibold">Página não encontrada</h1>

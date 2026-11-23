@@ -30,7 +30,7 @@ export function AuthLayout({
 
                 <div className="relative flex h-full flex-col justify-between p-12 text-white">
                     <Link href="/" className="w-fit">
-                        <Logo invert />
+                        <Logo invert animated />
                     </Link>
 
                     <div className="max-w-md">
@@ -67,7 +67,7 @@ export function AuthLayout({
                     className="w-full max-w-sm"
                 >
                     <Link href="/" className="mb-8 inline-flex lg:hidden">
-                        <Logo />
+                        <Logo animated />
                     </Link>
 
                     <h1 className="text-2xl font-bold tracking-tight">{title}</h1>

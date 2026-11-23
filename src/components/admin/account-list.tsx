@@ -26,7 +26,7 @@ export function AccountList({ users, actions }: { users: AdminUserRow[]; actions
     return (
         <>
             <table className="hidden w-full table-fixed text-sm lg:table">
-                <caption className="sr-only">Contas do Taskon</caption>
+                <caption className="sr-only">Contas da Raia</caption>
                 <thead>
                     <tr className="border-b border-border text-left text-xs text-muted-fg">
                         <th scope="col" className="py-2.5 pl-5 pr-3 font-medium">
@@ -74,7 +74,7 @@ export function AccountList({ users, actions }: { users: AdminUserRow[]; actions
                 </tbody>
             </table>
 
-            <ul className="divide-y divide-border lg:hidden" aria-label="Contas do Taskon">
+            <ul className="divide-y divide-border lg:hidden" aria-label="Contas da Raia">
                 {users.map((row) => (
                     <li key={row.id} className="px-4 py-4 sm:px-5">
                         <AccountIdentity row={row} isViewer={row.id === viewer.id} />

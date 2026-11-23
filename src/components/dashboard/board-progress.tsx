@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'motion/react';
+import { RaiaEmpty } from '@/components/brand';
 import Link from 'next/link';
 import { boardBackgroundClass } from '@/lib/palette';
 import { cn, pluralize } from '@/lib/utils';
@@ -8,7 +9,12 @@ import type { BoardProgress } from '@/types';
 
 export function BoardProgressList({ boards }: { boards: BoardProgress[] }) {
     if (boards.length === 0) {
-        return <p className="py-6 text-center text-sm text-muted-fg">Nenhum quadro por aqui ainda.</p>;
+        return (
+            <div className="grid place-items-center gap-3 py-6 text-center">
+                <RaiaEmpty />
+                <p className="text-sm text-muted-fg">Nenhum quadro por aqui ainda.</p>
+            </div>
+        );
     }
 
     return (

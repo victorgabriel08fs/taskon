@@ -122,7 +122,7 @@ export function AppLayout({ children, overlay = false, headerSlot, className }: 
                                         <PopoverItem icon={<Settings className="size-4" />}>Preferências</PopoverItem>
                                     </Link>
 
-                                    {/* Só para quem administra o Taskon — inclusive o nativo
+                                    {/* Só para quem administra a Raia — inclusive o nativo
                                         que ainda não confirmou o e-mail: é no /admin que ele
                                         pede o link que liga o painel. Para os outros, /admin
                                         é 404, e o item nem aparece. */}
