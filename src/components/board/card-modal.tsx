@@ -228,13 +228,13 @@ function CardModalBody({
                                             setEditingTitle(false);
                                         }
                                     }}
-                                    className="w-full resize-none rounded-lg bg-surface-2 px-2.5 py-1.5 text-xl font-bold ring-2 ring-primary focus:outline-none"
+                                    className="w-full resize-none rounded-lg bg-surface-2 px-2.5 py-1.5 text-xl font-semibold ring-2 ring-primary focus:outline-none"
                                 />
                             ) : (
                                 // O clique de editar mora num botão dentro do título, não
                                 // no <h2>: assim o teclado também chega à edição (Tab +
                                 // Enter), e o título segue sendo o nome do diálogo.
-                                <h2 id="card-title" className="-mx-2 text-xl font-bold leading-snug">
+                                <h2 id="card-title" className="-mx-2 text-xl font-semibold leading-snug">
                                     <button
                                         type="button"
                                         onClick={() => setEditingTitle(true)}
@@ -515,7 +515,7 @@ function FocusButton({ card }: { card: CardDetail }) {
         >
             {pomodoro.running ? <Pause className="size-4 fill-current" /> : <Play className="size-4 fill-current" />}
             <span className="flex-1 text-left">{pomodoro.running ? 'Focando' : 'Retomar'}</span>
-            <span className="tabular-nums">{clock(pomodoro.left)}</span>
+            <span className="font-mono tabular-nums">{clock(pomodoro.left)}</span>
         </button>
     );
 }
@@ -840,14 +840,14 @@ function Checklists({
 
                         <div className="ml-9 mt-2">
                             <div className="flex items-center gap-3">
-                                <span className="w-9 text-xs font-semibold tabular-nums text-muted-fg">{percent}%</span>
+                                <span className="w-9 text-xs font-semibold font-mono tabular-nums text-muted-fg">{percent}%</span>
                                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-3">
                                     <motion.div
                                         className={cn(
                                             'h-full rounded-full',
                                             percent === 100
                                                 ? 'bg-success'
-                                                : 'bg-gradient-to-r from-violet-500 to-fuchsia-500',
+                                                : 'bg-primary',
                                         )}
                                         initial={false}
                                         animate={{ width: `${percent}%` }}

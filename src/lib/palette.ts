@@ -48,14 +48,14 @@ export const COLOR_CHIP: Record<ColorKey, string> = {
 };
 
 export const AVATAR_COLOR: Record<AvatarColor, string> = {
-    violet: 'bg-gradient-to-br from-violet-500 to-purple-600 text-white',
-    blue: 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white',
-    emerald: 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white',
-    amber: 'bg-gradient-to-br from-amber-400 to-orange-500 text-white',
-    rose: 'bg-gradient-to-br from-rose-500 to-pink-600 text-white',
-    cyan: 'bg-gradient-to-br from-cyan-400 to-sky-600 text-white',
-    fuchsia: 'bg-gradient-to-br from-fuchsia-500 to-purple-600 text-white',
-    teal: 'bg-gradient-to-br from-teal-400 to-emerald-600 text-white',
+    violet: 'bg-violet-600 text-white',
+    blue: 'bg-blue-600 text-white',
+    emerald: 'bg-emerald-700 text-white',
+    amber: 'bg-amber-700 text-white',
+    rose: 'bg-rose-600 text-white',
+    cyan: 'bg-cyan-700 text-white',
+    fuchsia: 'bg-fuchsia-700 text-white',
+    teal: 'bg-teal-700 text-white',
 };
 
 export const BOARD_BACKGROUND: Record<BoardBackground, string> = {
@@ -70,13 +70,13 @@ export const BOARD_BACKGROUND: Record<BoardBackground, string> = {
 };
 
 export const BOARD_BACKGROUND_LABEL: Record<BoardBackground, string> = {
-    aurora: 'Aurora',
-    sunset: 'Pôr do sol',
-    ocean: 'Oceano',
-    forest: 'Floresta',
-    candy: 'Algodão-doce',
-    midnight: 'Meia-noite',
-    ember: 'Brasa',
+    aurora: 'Oliva',
+    sunset: 'Areia',
+    ocean: 'Petróleo',
+    forest: 'Musgo',
+    candy: 'Ameixa',
+    midnight: 'Azul-noite',
+    ember: 'Terracota',
     graphite: 'Grafite',
 };
 

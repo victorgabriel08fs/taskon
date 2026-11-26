@@ -76,13 +76,13 @@ export function FilterPopover({
                         'inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-medium transition-all duration-150',
                         'bg-white/15 text-white ring-1 ring-white/20 hover:bg-white/25 active:scale-95',
                         'max-md:gap-1 max-md:px-2.5',
-                        active > 0 && 'bg-white/90 text-violet-700 ring-white',
+                        active > 0 && 'bg-white/90 text-[#1e2327] ring-white',
                     )}
                 >
                     <Filter className="size-4" />
                     <span className="hidden md:inline">Filtros</span>
                     {active > 0 && (
-                        <span className="rounded-full bg-violet-600 px-1.5 text-[10px] font-bold text-white">
+                        <span className="rounded-full bg-[#1e2327] px-1.5 text-[10px] font-semibold text-[#c6f135]">
                             {active}
                         </span>
                     )}

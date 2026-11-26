@@ -15,6 +15,7 @@ import {
 import { motion, useScroll, useSpring, useTransform } from 'motion/react';
 import Link from 'next/link';
 import { useRef } from 'react';
+import { RaiaLanes } from '@/components/brand';
 import { Logo } from '@/components/logo';
 import { useCurrentUser } from '@/components/providers';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -89,7 +90,7 @@ export function Welcome() {
         <>
             <motion.div
                 style={{ scaleX: progress }}
-                className="fixed inset-x-0 top-0 z-50 h-0.5 origin-left bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-400"
+                className="fixed inset-x-0 top-0 z-50 h-0.5 origin-left bg-primary"
             />
 
             <div className="min-h-dvh bg-background">
@@ -127,9 +128,7 @@ export function Welcome() {
                 {/* ---------------------------------------------------------------- Hero */}
                 <section ref={heroRef} className="relative overflow-hidden">
                     <motion.div style={{ y: blobY }} className="pointer-events-none absolute inset-0 -z-10">
-                        <div className="absolute -left-32 top-0 size-[32rem] rounded-full bg-violet-500/22 blur-3xl" />
-                        <div className="absolute right-0 top-32 size-[26rem] rounded-full bg-fuchsia-500/18 blur-3xl" />
-                        <div className="absolute bottom-0 left-1/3 size-[22rem] rounded-full bg-sky-400/18 blur-3xl" />
+                        <RaiaLanes className="text-foreground opacity-70" />
                     </motion.div>
 
                     <div className="mx-auto max-w-6xl px-5 pb-24 pt-20 sm:pt-28">
@@ -148,7 +147,7 @@ export function Welcome() {
                                 initial={{ opacity: 0, y: 22 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.65, delay: 0.06, ease: [0.22, 1, 0.36, 1] }}
-                                className="mt-6 text-balance text-4xl font-bold leading-[1.05] tracking-tight sm:text-6xl"
+                                className="mt-6 text-balance text-4xl font-semibold leading-[1.05] tracking-tight sm:text-6xl"
                             >
                                 Organize qualquer coisa,{' '}
                                 <span className="text-gradient">arrastando</span>.
@@ -201,7 +200,7 @@ export function Welcome() {
                 <section id="recursos" className="border-t border-border bg-surface-2/40 py-24">
                     <div ref={featuresRef} className="mx-auto max-w-6xl px-5">
                         <div data-reveal className="reveal mx-auto max-w-2xl text-center">
-                            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
                                 Tudo que um quadro precisa ter
                             </h2>
                             <p className="mt-4 text-muted-fg">
@@ -237,7 +236,7 @@ export function Welcome() {
                                 Feito para o teclado
                             </span>
 
-                            <h2 className="mt-6 text-3xl font-bold tracking-tight sm:text-4xl">
+                            <h2 className="mt-6 text-3xl font-semibold tracking-tight sm:text-4xl">
                                 Suas mãos não precisam sair do lugar
                             </h2>
                             <p className="mt-4 text-muted-fg">
@@ -272,15 +271,11 @@ export function Welcome() {
                 <section className="px-5 pb-24">
                     <div
                         ref={ctaRef}
-                        className="reveal relative mx-auto max-w-5xl overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 via-fuchsia-600 to-pink-500 px-8 py-16 text-center text-white"
+                        className="reveal relative mx-auto max-w-5xl overflow-hidden rounded-2xl bg-[#1e2327] px-8 py-16 text-center text-white"
                     >
-                        <div className="absolute -left-16 -top-16 size-64 animate-float rounded-full bg-white/12 blur-2xl" />
-                        <div
-                            className="absolute -bottom-20 -right-10 size-72 animate-float rounded-full bg-white/12 blur-2xl"
-                            style={{ animationDelay: '-3.5s' }}
-                        />
+                        <RaiaLanes />
 
-                        <h2 className="relative text-3xl font-bold tracking-tight sm:text-4xl">
+                        <h2 className="relative text-3xl font-semibold tracking-tight sm:text-4xl">
                             Seu próximo quadro está a um clique
                         </h2>
                         <p className="relative mx-auto mt-4 max-w-lg text-white/85">
@@ -289,7 +284,7 @@ export function Welcome() {
 
                         <div className="relative mt-8 flex justify-center">
                             <Link href={user ? '/dashboard' : '/register'}>
-                                <Button size="lg" variant="glass" className="bg-white/90! text-violet-700! ring-white/40">
+                                <Button size="lg" className="bg-[#c6f135]! text-[#15191c]!">
                                     {user ? 'Ir para meus quadros' : 'Criar conta gratuita'}
                                     <ArrowRight className="size-4" />
                                 </Button>
@@ -315,7 +310,7 @@ function StatCard({ icon: Icon, value, label }: { icon: typeof Layers; value: st
     return (
         <div className="rounded-xl bg-surface p-6 ring-1 ring-border transition-transform duration-300 hover:-translate-y-1">
             <Icon className="size-5 text-primary" />
-            <p className="mt-4 text-3xl font-bold tracking-tight">{value}</p>
+            <p className="mt-4 text-3xl font-semibold tracking-tight">{value}</p>
             <p className="mt-1 text-sm text-muted-fg">{label}</p>
         </div>
     );
@@ -330,7 +325,7 @@ function BoardPreview() {
         {
             title: 'A fazer',
             cards: [
-                { title: 'Revisar textos da home', labels: ['bg-violet-500'], meta: '2/5' },
+                { title: 'Revisar textos da home', labels: ['bg-sky-500'], meta: '2/5' },
                 { title: 'Configurar backup', labels: ['bg-blue-500', 'bg-rose-500'], meta: null },
             ],
         },
@@ -347,7 +342,7 @@ function BoardPreview() {
     ];
 
     return (
-        <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 p-2.5 shadow-[var(--shadow-float)] ring-1 ring-black/10">
+        <div className="overflow-hidden rounded-2xl board-bg board-bg-ocean p-2.5 shadow-[var(--shadow-float)] ring-1 ring-black/10">
             <div className="flex items-center gap-2 px-2 py-2">
                 <span className="size-2.5 rounded-full bg-white/35" />
                 <span className="size-2.5 rounded-full bg-white/35" />

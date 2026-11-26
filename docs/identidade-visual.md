@@ -109,11 +109,16 @@ Ligadas às formas e cores do símbolo, como no Prumo: tocam uma vez, partem de 
 - **Navegação**: a barra de progresso leva o pingo lima na ponta.
 - **Progresso**: a barra do cartão do quadro enche como uma coluna.
 - **404**: a terceira coluna sai da raia.
-- Tempos e curvas ficam só em `src/app/globals.css` (blocos "Marca"). Próximas: o fio lima acompanhando a rolagem da home.
+- Tempos e curvas ficam só em `src/app/globals.css` (blocos "Marca"). **Fio da home**: a linha no topo da landing acompanha a rolagem na cor de ação. **Raias de fundo** (`<RaiaLanes />`): no painel de entrada, no hero e na chamada final, três raias grandes descem do topo no lugar dos brilhos antigos.
 
-## 6. Próximas etapas
+## 6. Implementação
 
-1. Design system: os tokens acima no CSS (Tailwind v4), com os nomes atuais de `globals.css` mantidos onde der.
-2. Aplicar tokens, logo, favicon, ícones, Open Graph, `theme-color`, manifesto, atalhos e splash do iOS.
-3. Telas: board e card, dashboard, auth, landing, admin e e-mails.
-4. Revisão de contraste e foco.
+Feito (26/11/2026):
+
+1. Tokens desta página em `src/app/globals.css` (`:root` claro, `.dark` escuro), com os nomes atuais mantidos e três novos: `--border-strong`, `--primary-button` e `--primary-button-fg` (botão principal grafite com texto lima no claro, lima com texto grafite no escuro).
+2. Geist e Geist Mono (`next/font`), sem peso 700; números comparáveis em `font-mono tabular-nums`.
+3. Fundos de quadro sólidos (as chaves antigas continuam no banco: aurora → Oliva, sunset → Areia, ocean → Petróleo, forest → Musgo, candy → Ameixa, midnight → Azul-noite, ember → Terracota, graphite → Grafite) e avatares sem gradiente.
+4. Telas sem gradiente nem brilho: landing, entrada, quadro, painel; e-mails com cabeçalho grafite, nome em lima e botão grafite com texto lima.
+5. `theme-color`, manifesto, ícones e imagem de compartilhamento (`src/app/opengraph-image.tsx`).
+
+Falta: splash do iOS (`apple-touch-startup-image`) e as cores das etiquetas com par claro/escuro medido.

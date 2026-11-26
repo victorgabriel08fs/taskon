@@ -198,7 +198,7 @@ export function ExportModal({ open, board, selected, onToggleCard, onClose }: Ex
             <div className="flex max-h-[86vh] flex-col">
                 <header className="flex items-start gap-3 border-b border-border px-5 py-4">
                     <div className="min-w-0 flex-1">
-                        <h2 id="export-title" className="text-lg font-bold">
+                        <h2 id="export-title" className="text-lg font-semibold">
                             Exportar como prompt
                         </h2>
                         <p className="mt-0.5 text-xs text-muted-fg">
@@ -380,7 +380,7 @@ export function ExportModal({ open, board, selected, onToggleCard, onClose }: Ex
                                                 </p>
                                             )}
 
-                                            <span className="shrink-0 text-[11px] tabular-nums text-muted-fg">
+                                            <span className="shrink-0 text-[11px] font-mono tabular-nums text-muted-fg">
                                                 {pluralize(sprint.tasks.length, 'tarefa', 'tarefas')}
                                             </span>
 

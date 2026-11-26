@@ -63,7 +63,7 @@ export function AccountList({ users, actions }: { users: AdminUserRow[]; actions
                                     </>
                                 )}
                             </td>
-                            <td className="px-3 py-3 text-right tabular-nums">
+                            <td className="px-3 py-3 text-right font-mono tabular-nums">
                                 {formatCount(row.boards_count)}
                             </td>
                             <td className="py-3 pl-3 pr-5">

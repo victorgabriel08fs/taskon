@@ -29,3 +29,23 @@ export function RaiaEmpty({ className }: { className?: string }) {
         </svg>
     );
 }
+
+/**
+ * Fundo dos painéis da marca (entrada, hero, chamada final): três raias
+ * grandes que descem do topo, a primeira em lima, no lugar dos brilhos e
+ * gradientes do desenho antigo. Decorativo; parado com movimento reduzido.
+ */
+export function RaiaLanes({ className }: { className?: string }) {
+    return (
+        <svg
+            viewBox="0 0 300 400"
+            preserveAspectRatio="xMidYMin slice"
+            aria-hidden
+            className={cn('raia-lanes pointer-events-none absolute inset-0 size-full', className)}
+        >
+            <rect className="lane" x="40" y="-20" width="60" height="330" rx="18" fill="#C6F135" fillOpacity="0.14" />
+            <rect className="lane" x="120" y="-20" width="60" height="240" rx="18" fill="currentColor" fillOpacity="0.07" />
+            <rect className="lane" x="200" y="-20" width="60" height="150" rx="18" fill="currentColor" fillOpacity="0.04" />
+        </svg>
+    );
+}

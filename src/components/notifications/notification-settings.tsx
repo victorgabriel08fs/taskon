@@ -178,7 +178,7 @@ function PreviewTile({
             >
                 {icon}
             </span>
-            <p className="mt-2 text-xl font-bold tabular-nums">{value}</p>
+            <p className="mt-2 text-xl font-semibold font-mono tabular-nums">{value}</p>
             <p className="text-[11px] font-medium text-muted-fg">{label}</p>
         </motion.div>
     );

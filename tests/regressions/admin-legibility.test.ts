@@ -182,6 +182,9 @@ const UTILITIES = new Map(
 
 const OKLCH_VARIABLE = /--([\w-]+):\s*oklch\(([\d.]+)%\s+([\d.]+)\s+([\d.]+)\)/g;
 
+/** Os tokens da marca Raia vêm em hex (`--primary: #4a6100`). */
+const HEX_VARIABLE = /--([\w-]+):\s*#([0-9a-f]{6})\b/gi;
+
 /** As cores de um tema (`:root` ou `.dark`) em sRGB, pelo nome do utilitário. */
 function themeColors(selector: string): Map<string, Rgb> {
     const block = new RegExp(String.raw`^${selector}\s*\{([^}]*)\}`, 'm').exec(CSS)?.[1] ?? '';
@@ -190,6 +193,12 @@ function themeColors(selector: string): Map<string, Rgb> {
 
     for (const [, name, lightness, chroma, hue] of block.matchAll(OKLCH_VARIABLE)) {
         variables.set(name!, oklchToSrgb(Number(lightness) / 100, Number(chroma), Number(hue)));
+    }
+
+    for (const [, name, hex] of block.matchAll(HEX_VARIABLE)) {
+        const channel = (offset: number) => parseInt(hex!.slice(offset, offset + 2), 16) / 255;
+
+        variables.set(name!, [channel(0), channel(2), channel(4)]);
     }
 
     for (const [utility, variable] of UTILITIES) {

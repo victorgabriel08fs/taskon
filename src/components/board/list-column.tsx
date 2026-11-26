@@ -195,7 +195,7 @@ export function ListColumn({
 
                 <span
                     className={cn(
-                        'shrink-0 rounded px-1.5 py-0.5 text-[11px] font-semibold tabular-nums',
+                        'shrink-0 rounded px-1.5 py-0.5 text-[11px] font-semibold font-mono tabular-nums',
                         overLimit ? 'bg-danger/15 text-danger' : 'text-muted-fg',
                     )}
                     title={list.card_limit ? `Limite: ${list.card_limit}` : undefined}

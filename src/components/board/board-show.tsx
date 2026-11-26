@@ -672,7 +672,7 @@ function SelectionBar({
                     className="pointer-events-none absolute inset-x-0 bottom-5 z-20 flex justify-center px-4"
                 >
                     <div className="pointer-events-auto flex flex-wrap items-center justify-center gap-1.5 rounded-xl bg-surface/95 p-2 pl-3.5 shadow-[var(--shadow-float)] ring-1 ring-border backdrop-blur">
-                        <p className="text-sm font-semibold tabular-nums">
+                        <p className="text-sm font-semibold font-mono tabular-nums">
                             {count === 0
                                 ? 'Escolha os cards do prompt'
                                 : pluralize(count, 'card escolhido', 'cards escolhidos')}

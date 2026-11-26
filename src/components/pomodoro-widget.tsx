@@ -75,7 +75,7 @@ export function PomodoroWidget({ userId, overlay = false }: { userId: number; ov
                         aria-label="Pomodoro"
                         aria-expanded={open}
                         className={cn(
-                            'flex h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 text-sm font-semibold tabular-nums',
+                            'flex h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 text-sm font-semibold font-mono tabular-nums',
                             'transition-all duration-200 active:scale-95',
                             overlay
                                 ? 'bg-white/12 text-white ring-1 ring-white/20 hover:bg-white/25'
@@ -174,7 +174,7 @@ function Panel({ pomodoro }: { pomodoro: PomodoroSnapshot }) {
                 />
 
                 <div className="text-center">
-                    <p className="text-4xl font-bold leading-none tabular-nums">{clock(pomodoro.left)}</p>
+                    <p className="text-4xl font-semibold leading-none font-mono tabular-nums">{clock(pomodoro.left)}</p>
                     {/* "Em pausa" seria ambíguo aqui: a própria fase pode se
                         chamar "Pausa curta". O nome da fase vem sempre, e o
                         estado do cronômetro entra como sufixo. */}

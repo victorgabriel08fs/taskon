@@ -3,6 +3,7 @@
 import { motion } from 'motion/react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { RaiaLanes } from '@/components/brand';
 import { Logo } from '@/components/logo';
 
 /**
@@ -21,12 +22,8 @@ export function AuthLayout({
     return (
         <div className="relative grid min-h-dvh lg:grid-cols-[1.1fr_1fr]">
             {/* Painel decorativo — some no mobile para não roubar espaço do formulário. */}
-            <div className="relative hidden overflow-hidden bg-gradient-to-br from-violet-600 via-fuchsia-600 to-pink-500 lg:block">
-                <div className="absolute -left-24 top-1/4 size-96 animate-float rounded-full bg-white/15 blur-3xl" />
-                <div
-                    className="absolute -right-16 bottom-10 size-80 animate-float rounded-full bg-sky-300/25 blur-3xl"
-                    style={{ animationDelay: '-3s' }}
-                />
+            <div className="relative hidden overflow-hidden bg-[#1e2327] text-white lg:block">
+                <RaiaLanes />
 
                 <div className="relative flex h-full flex-col justify-between p-12 text-white">
                     <Link href="/" className="w-fit">
@@ -38,7 +35,7 @@ export function AuthLayout({
                             initial={{ opacity: 0, y: 24 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-                            className="text-4xl font-bold leading-tight tracking-tight"
+                            className="text-4xl font-semibold leading-tight tracking-tight"
                         >
                             Organize qualquer coisa,
                             <br />
@@ -70,7 +67,7 @@ export function AuthLayout({
                         <Logo animated />
                     </Link>
 
-                    <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+                    <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
                     <p className="mt-1.5 text-sm text-muted-fg">{description}</p>
 
                     <div className="mt-8">{children}</div>
