@@ -38,7 +38,7 @@ export function BoardProgressList({ boards }: { boards: BoardProgress[] }) {
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-baseline justify-between gap-2">
                                     <p className="truncate text-sm font-medium">{board.title}</p>
-                                    <span className="shrink-0 text-xs font-semibold tabular-nums text-muted-fg">
+                                    <span className="shrink-0 text-xs font-semibold font-mono tabular-nums text-muted-fg">
                                         {percent}%
                                     </span>
                                 </div>
@@ -52,7 +52,7 @@ export function BoardProgressList({ boards }: { boards: BoardProgress[] }) {
                                             delay: 0.15 + index * 0.07,
                                             ease: [0.22, 1, 0.36, 1],
                                         }}
-                                        className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500"
+                                        className="h-full rounded-full bg-primary"
                                     />
                                 </div>
 

@@ -33,7 +33,7 @@ export function SettingsLayout({
     return (
         <AppLayout>
             <div className="mx-auto w-full max-w-4xl px-5 py-10">
-                <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>
+                <h1 className="text-2xl font-semibold tracking-tight">Configurações</h1>
                 <p className="mt-1 text-sm text-muted-fg">Ajustes da sua conta e da interface.</p>
 
                 <div className="mt-8 grid gap-8 md:grid-cols-[190px_1fr]">

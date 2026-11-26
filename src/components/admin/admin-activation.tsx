@@ -34,7 +34,7 @@ export function AdminActivation({ expiresInMinutes }: { expiresInMinutes: number
                         <ShieldCheck className="size-6" aria-hidden />
                     </span>
 
-                    <h1 id="admin-activation-title" className="mt-5 text-xl font-bold tracking-tight">
+                    <h1 id="admin-activation-title" className="mt-5 text-xl font-semibold tracking-tight">
                         Ative a administração
                     </h1>
                     <p className="mt-2 text-sm text-muted-fg">

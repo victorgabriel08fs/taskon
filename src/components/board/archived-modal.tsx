@@ -101,11 +101,11 @@ export function ArchivedModal({ open, board, config, onClose }: ArchivedModalPro
             <div className="flex max-h-[86vh] flex-col">
                 <header className="flex items-center gap-2.5 border-b border-border px-6 py-4">
                     <Archive className="size-4.5 text-muted-fg" />
-                    <h2 id="archived-title" className="flex-1 text-base font-bold">
+                    <h2 id="archived-title" className="flex-1 text-base font-semibold">
                         Arquivados
                     </h2>
                     {board.archived_count > 0 && (
-                        <span className="mr-8 rounded-full bg-surface-2 px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-fg">
+                        <span className="mr-8 rounded-full bg-surface-2 px-2 py-0.5 text-xs font-semibold font-mono tabular-nums text-muted-fg">
                             {board.archived_count}
                         </span>
                     )}

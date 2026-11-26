@@ -86,7 +86,7 @@ export function DonutChart({ segments, caption }: { segments: DonutSegment[]; ca
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -6 }}
                             transition={{ duration: 0.18 }}
-                            className="text-3xl font-bold leading-none tabular-nums"
+                            className="text-3xl font-semibold leading-none font-mono tabular-nums"
                         >
                             {centerValue}
                         </motion.p>
@@ -117,7 +117,7 @@ export function DonutChart({ segments, caption }: { segments: DonutSegment[]; ca
                                 style={{ backgroundColor: segment.color }}
                             />
                             <span className="min-w-0 flex-1 truncate text-sm">{segment.label}</span>
-                            <span className="text-sm font-semibold tabular-nums">{segment.value}</span>
+                            <span className="text-sm font-semibold font-mono tabular-nums">{segment.value}</span>
                         </button>
                     </li>
                 ))}

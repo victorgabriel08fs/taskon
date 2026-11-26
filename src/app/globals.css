@@ -13,65 +13,77 @@
  --------------------------------------------------------------------------- */
 
 :root {
-    --radius: 0.85rem;
+    /* Grafite e lima, tema claro (docs/identidade-visual.md §3). No claro a
+       lima não tem contraste sobre branco: a ação é a lima escura, e o botão
+       principal é grafite com texto lima (--primary-button). */
+    --radius: 0.75rem;
 
-    --background: oklch(98.5% 0.004 285);
-    --foreground: oklch(21% 0.02 275);
+    --background: #f4f5f0;
+    --foreground: #1e2327;
 
-    --surface: oklch(100% 0 0);
-    --surface-2: oklch(96.8% 0.006 285);
-    --surface-3: oklch(93.5% 0.008 285);
+    --surface: #ffffff;
+    --surface-2: #eceee8;
+    --surface-3: #e2e5de;
 
-    --muted: oklch(95.5% 0.006 285);
-    --muted-fg: oklch(50% 0.02 275);
+    --muted: #eceee8;
+    --muted-fg: #5a626a;
 
-    --border: oklch(90% 0.008 285);
-    --ring: oklch(58% 0.21 293);
+    --border: #dde0d8;
+    --border-strong: #8a928b;
+    --ring: #4a6100;
 
-    --primary: oklch(58% 0.21 293);
-    --primary-fg: oklch(99% 0 0);
-    --primary-soft: oklch(95% 0.04 293);
+    --primary: #4a6100;
+    --primary-fg: #ffffff;
+    --primary-soft: #e9f0d2;
+    --primary-button: #1e2327;
+    --primary-button-fg: #c6f135;
 
-    --success: oklch(64% 0.15 155);
-    --danger: oklch(58% 0.21 25);
-    --warning: oklch(75% 0.15 75);
+    --success: #1d7f4e;
+    --danger: #c0392b;
+    --warning: #9a5b00;
 
-    --shadow-card: 0 1px 2px oklch(0% 0 0 / 0.06), 0 4px 14px oklch(0% 0 0 / 0.05);
-    --shadow-float: 0 10px 40px oklch(0% 0 0 / 0.14), 0 2px 8px oklch(0% 0 0 / 0.08);
+    --shadow-card: 0 1px 2px rgb(30 35 39 / 0.06), 0 4px 14px rgb(30 35 39 / 0.05);
+    --shadow-float: 0 10px 40px rgb(30 35 39 / 0.14), 0 2px 8px rgb(30 35 39 / 0.08);
 }
 
 .dark {
-    --background: oklch(16% 0.02 265);
-    --foreground: oklch(96% 0.006 285);
+    /* Escuro, o padrão da marca: lima direto como ação, foco e seleção. */
+    --background: #15191c;
+    --foreground: #f4f5f0;
 
-    --surface: oklch(21.5% 0.022 267);
-    --surface-2: oklch(25% 0.024 267);
-    --surface-3: oklch(29% 0.026 267);
+    --surface: #1e2327;
+    --surface-2: #262c31;
+    --surface-3: #2f363c;
 
-    --muted: oklch(26% 0.022 267);
-    --muted-fg: oklch(71% 0.02 275);
+    --muted: #262c31;
+    --muted-fg: #a3aab1;
 
-    --border: oklch(32% 0.02 267);
-    --ring: oklch(70% 0.17 293);
+    --border: #3a424a;
+    --border-strong: #737d86;
+    --ring: #c6f135;
 
-    --primary: oklch(66% 0.19 293);
-    --primary-fg: oklch(15% 0.02 285);
-    --primary-soft: oklch(30% 0.07 293);
+    --primary: #c6f135;
+    --primary-fg: #15191c;
+    --primary-soft: #2f3a17;
+    --primary-button: #c6f135;
+    --primary-button-fg: #15191c;
 
-    --success: oklch(70% 0.15 155);
-    --danger: oklch(66% 0.2 25);
-    --warning: oklch(80% 0.14 75);
+    --success: #6fd39b;
+    --danger: #ff8070;
+    --warning: #f5b94a;
 
-    --shadow-card: 0 1px 2px oklch(0% 0 0 / 0.4), 0 4px 14px oklch(0% 0 0 / 0.3);
-    --shadow-float: 0 12px 44px oklch(0% 0 0 / 0.55), 0 2px 8px oklch(0% 0 0 / 0.4);
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 14px rgb(0 0 0 / 0.3);
+    --shadow-float: 0 12px 44px rgb(0 0 0 / 0.55), 0 2px 8px rgb(0 0 0 / 0.4);
 }
 
-/* O `inline` é o que faz a fonte funcionar: a variável --font-instrument-sans
-   (next/font) mora no <body>, não no <html> (ver layout.tsx), e o utilitário
-   `font-sans` precisa carregá-la crua para resolvê-la no próprio elemento. */
+/* O `inline` é o que faz a fonte funcionar: as variáveis --font-geist e
+   --font-geist-mono (next/font) moram no <body>, não no <html> (ver
+   layout.tsx), e os utilitários precisam carregá-las cruas para resolvê-las
+   no próprio elemento. */
 @theme inline {
-    --font-sans: var(--font-instrument-sans), 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: var(--font-geist), 'Geist', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Color Emoji';
+    --font-mono: var(--font-geist-mono), 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
     --color-background: var(--background);
     --color-foreground: var(--foreground);
@@ -81,10 +93,13 @@
     --color-muted: var(--muted);
     --color-muted-fg: var(--muted-fg);
     --color-border: var(--border);
+    --color-border-strong: var(--border-strong);
     --color-ring: var(--ring);
     --color-primary: var(--primary);
     --color-primary-fg: var(--primary-fg);
     --color-primary-soft: var(--primary-soft);
+    --color-primary-button: var(--primary-button);
+    --color-primary-button-fg: var(--primary-button-fg);
     --color-success: var(--success);
     --color-danger: var(--danger);
     --color-warning: var(--warning);
@@ -220,11 +235,9 @@
     -webkit-backdrop-filter: blur(16px) saturate(160%);
 }
 
+/* Sem gradiente na marca: o destaque de texto é a cor de ação. */
 @utility text-gradient {
-    background-image: linear-gradient(100deg, var(--primary), oklch(70% 0.2 330), oklch(72% 0.15 220));
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
+    color: var(--primary);
 }
 
 @utility scrollbar-none {
@@ -260,29 +273,31 @@
     background-position: center;
 }
 
+/* Cores sólidas, todas com texto branco acima de 6,5:1 (§3, "Fundos dos
+   quadros"). As chaves antigas continuam — o banco guarda a chave. */
 .board-bg-aurora {
-    background-image: linear-gradient(135deg, #6366f1 0%, #8b5cf6 38%, #d946ef 72%, #f472b6 100%);
+    background-color: #4a5a1f; /* Oliva */
 }
 .board-bg-sunset {
-    background-image: linear-gradient(135deg, #f97316 0%, #ef4444 45%, #a21caf 100%);
+    background-color: #6b5a3a; /* Areia */
 }
 .board-bg-ocean {
-    background-image: linear-gradient(135deg, #0ea5e9 0%, #2563eb 50%, #1e1b4b 100%);
+    background-color: #1f4e5a; /* Petróleo */
 }
 .board-bg-forest {
-    background-image: linear-gradient(135deg, #22c55e 0%, #0d9488 55%, #134e4a 100%);
+    background-color: #3b5244; /* Musgo */
 }
 .board-bg-candy {
-    background-image: linear-gradient(135deg, #f9a8d4 0%, #c084fc 45%, #60a5fa 100%);
+    background-color: #4e2f4f; /* Ameixa */
 }
 .board-bg-midnight {
-    background-image: linear-gradient(135deg, #1e293b 0%, #312e81 55%, #4c1d95 100%);
+    background-color: #26365c; /* Azul-noite */
 }
 .board-bg-ember {
-    background-image: linear-gradient(135deg, #facc15 0%, #f97316 50%, #b91c1c 100%);
+    background-color: #7a3b2e; /* Terracota */
 }
 .board-bg-graphite {
-    background-image: linear-gradient(135deg, #64748b 0%, #334155 55%, #0f172a 100%);
+    background-color: #2f363c; /* Grafite */
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -657,7 +672,23 @@
     animation: raia-fill 900ms var(--raia-ease) 200ms backwards;
 }
 
+/* Raias de fundo dos painéis da marca: descem do topo em sequência. */
+.raia-lanes .lane {
+    transform-box: fill-box;
+    transform-origin: top;
+    animation: raia-empty-lane 900ms var(--raia-ease) backwards;
+}
+
+.raia-lanes .lane:nth-of-type(2) {
+    animation-delay: 120ms;
+}
+
+.raia-lanes .lane:nth-of-type(3) {
+    animation-delay: 240ms;
+}
+
 @media (prefers-reduced-motion: reduce) {
+    .raia-lanes .lane,
     .raia-loader .brand-col > rect,
     .raia-skeleton::after,
     .raia-col-in,

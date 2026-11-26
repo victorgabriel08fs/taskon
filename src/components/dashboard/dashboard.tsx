@@ -84,7 +84,7 @@ export function Dashboard({ stats, breakdown, deadlines, trend, boards, horizonD
                 >
                     <div>
                         {/* A saudação depende do relógio, que anda entre o SSR e a hidratação. */}
-                        <h1 className="text-2xl font-bold tracking-tight" suppressHydrationWarning>
+                        <h1 className="text-2xl font-semibold tracking-tight" suppressHydrationWarning>
                             {greeting()}, {user.name.split(' ')[0]}.
                         </h1>
                         <p className="mt-1 text-sm text-muted-fg">

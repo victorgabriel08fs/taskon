@@ -106,14 +106,14 @@ export function BoardHeader({
                     }}
                     // min-w-0: no celular o campo encolhe em vez de empurrar as
                     // ações para baixo do cronômetro.
-                    className="w-56 min-w-0 rounded-lg bg-white/95 px-2.5 py-1.5 text-base font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-white"
+                    className="w-56 min-w-0 rounded-lg bg-white/95 px-2.5 py-1.5 text-base font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-white"
                 />
             ) : (
                 <button
                     type="button"
                     onClick={() => board.can.manage && startEditing()}
                     className={cn(
-                        'max-w-[16rem] truncate rounded-lg px-2.5 py-1.5 text-base font-bold text-white drop-shadow',
+                        'max-w-[16rem] truncate rounded-lg px-2.5 py-1.5 text-base font-semibold text-white drop-shadow',
                         board.can.manage && 'transition-colors hover:bg-white/15',
                     )}
                 >
@@ -210,7 +210,7 @@ export function BoardHeader({
                             >
                                 <span className="flex-1">Arquivados</span>
                                 {board.archived_count > 0 && (
-                                    <span className="rounded-full bg-surface-2 px-1.5 text-[10px] font-bold tabular-nums text-muted-fg">
+                                    <span className="rounded-full bg-surface-2 px-1.5 text-[10px] font-semibold font-mono tabular-nums text-muted-fg">
                                         {board.archived_count}
                                     </span>
                                 )}

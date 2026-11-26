@@ -63,7 +63,7 @@ export function AdminPanel({ viewer, stats, users, pagination, filters, events }
                     transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                 >
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                        <h1 className="text-2xl font-bold tracking-tight">Administração</h1>
+                        <h1 className="text-2xl font-semibold tracking-tight">Administração</h1>
                         <span
                             className={cn(
                                 'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold',

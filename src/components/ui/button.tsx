@@ -10,7 +10,7 @@ type Size = 'sm' | 'md' | 'lg' | 'icon';
 
 const VARIANTS: Record<Variant, string> = {
     primary:
-        'bg-primary text-primary-fg shadow-sm hover:brightness-110 active:brightness-95 disabled:opacity-50',
+        'bg-primary-button text-primary-button-fg shadow-sm hover:brightness-110 active:brightness-95 disabled:opacity-50',
     secondary: 'bg-surface-2 text-foreground hover:bg-surface-3 ring-1 ring-border',
     outline: 'bg-transparent text-foreground ring-1 ring-border hover:bg-surface-2',
     ghost: 'bg-transparent text-muted-fg hover:bg-surface-2 hover:text-foreground',

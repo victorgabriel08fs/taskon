@@ -25,7 +25,6 @@ export function BoardCard({ board, index }: { board: BoardSummary; index: number
                 className="group relative block overflow-hidden rounded-xl shadow-[var(--shadow-card)] ring-1 ring-border transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[var(--shadow-float)]"
             >
                 <div className={cn('relative h-24', boardBackgroundClass(board.background))}>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
 
                     <button
                         type="button"
@@ -66,7 +65,7 @@ export function BoardCard({ board, index }: { board: BoardSummary; index: number
 
                     <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-3">
                         <div
-                            className="raia-fill h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-[width] duration-700 ease-out"
+                            className="raia-fill h-full rounded-full bg-primary transition-[width] duration-700 ease-out"
                             style={{ width: `${progress}%` }}
                         />
                     </div>

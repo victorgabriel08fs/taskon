@@ -52,7 +52,7 @@ export function passwordResetMail({
     <meta name="color-scheme" content="light">
     <title>Redefinir senha</title>
 </head>
-<body style="margin:0; padding:0; width:100%; background-color:#eef0f5; -webkit-font-smoothing:antialiased;">
+<body style="margin:0; padding:0; width:100%; background-color:#f4f5f0; -webkit-font-smoothing:antialiased;">
 
 <!-- Prévia que aparece na lista de e-mails, ao lado do assunto. -->
 <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent; height:0; width:0;">
@@ -60,7 +60,7 @@ export function passwordResetMail({
     &#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;&#8203;
 </div>
 
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#eef0f5;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f5f0;">
 <tr>
 <td align="center" style="padding:28px 12px 40px;">
 
@@ -70,11 +70,11 @@ export function passwordResetMail({
              reserva para o Outlook, que ignora gradiente e ficaria com texto
              branco no branco. -->
         <tr>
-            <td style="background-color:#7c3aed; background-image:linear-gradient(120deg,#6d28d9 0%,#7c3aed 45%,#c026d3 100%); padding:28px 32px;">
-                <div style="font-family:${FONT}; font-size:17px; font-weight:700; color:#ffffff; letter-spacing:-0.2px;">
+            <td style="background-color:#1e2327; padding:28px 32px;">
+                <div style="font-family:${FONT}; font-size:17px; font-weight:600; color:#c6f135; letter-spacing:-0.2px;">
                     ${app}
                 </div>
-                <p style="margin:18px 0 0; font-family:${FONT}; font-size:24px; line-height:1.25; font-weight:700; color:#ffffff;">
+                <p style="margin:18px 0 0; font-family:${FONT}; font-size:24px; line-height:1.25; font-weight:600; color:#ffffff;">
                     Olá, ${escapeHtml(firstName)}.
                 </p>
                 <p style="margin:6px 0 0; font-family:${FONT}; font-size:14px; line-height:1.5; color:rgba(255,255,255,0.82);">
@@ -95,9 +95,9 @@ export function passwordResetMail({
             <td align="center" style="padding:26px 28px 4px;">
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                     <tr>
-                        <td align="center" style="background-color:#7c3aed; border-radius:10px;">
+                        <td align="center" style="background-color:#1e2327; border-radius:10px;">
                             <a href="${href}"
-                               style="display:inline-block; padding:13px 30px; font-family:${FONT}; font-size:15px; font-weight:600; color:#ffffff; text-decoration:none;">
+                               style="display:inline-block; padding:13px 30px; font-family:${FONT}; font-size:15px; font-weight:600; color:#c6f135; text-decoration:none;">
                                 Redefinir senha
                             </a>
                         </td>
@@ -108,7 +108,7 @@ export function passwordResetMail({
 
         <tr>
             <td style="padding:24px 32px 0;">
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc; border:1px solid #e6e9ef; border-radius:12px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f5f0; border:1px solid #dde0d8; border-radius:12px;">
                     <tr>
                         <td style="padding:14px 16px; font-family:${FONT}; font-size:13px; line-height:1.55; color:#475569;">
                             Não foi você? Ignore este e-mail — sua senha continua a mesma e
@@ -121,10 +121,10 @@ export function passwordResetMail({
 
         <tr>
             <td style="padding:26px 32px 30px;">
-                <div style="height:1px; background-color:#e6e9ef; font-size:0; line-height:0;">&nbsp;</div>
+                <div style="height:1px; background-color:#dde0d8; font-size:0; line-height:0;">&nbsp;</div>
                 <p style="margin:16px 0 0; font-family:${FONT}; font-size:12px; line-height:1.6; color:#94a3b8;">
                     O botão não funcionou? Copie e cole este endereço no navegador:<br>
-                    <a href="${href}" style="color:#7c3aed; text-decoration:underline; word-break:break-all;">${href}</a>
+                    <a href="${href}" style="color:#4a6100; text-decoration:underline; word-break:break-all;">${href}</a>
                 </p>
             </td>
         </tr>

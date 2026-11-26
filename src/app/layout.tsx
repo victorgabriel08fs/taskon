@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Instrument_Sans } from 'next/font/google';
+import { Geist, Geist_Mono } from 'next/font/google';
 import { cookies } from 'next/headers';
 import type { ReactNode } from 'react';
 import { Providers } from '@/components/providers';
@@ -10,10 +10,16 @@ import { authUserResource } from '@/server/resources/common';
 import type { Appearance } from '@/types';
 import './globals.css';
 
-const instrumentSans = Instrument_Sans({
-    subsets: ['latin'],
-    weight: ['400', '500', '600', '700'],
-    variable: '--font-instrument-sans',
+// Geist na interface e Geist Mono nos números que se comparam (§4 da marca).
+const geist = Geist({
+    subsets: ['latin', 'latin-ext'],
+    variable: '--font-geist',
+    display: 'swap',
+});
+
+const geistMono = Geist_Mono({
+    subsets: ['latin', 'latin-ext'],
+    variable: '--font-geist-mono',
     display: 'swap',
 });
 
@@ -28,8 +34,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
     themeColor: [
-        { media: '(prefers-color-scheme: light)', color: '#f8f8fb' },
-        { media: '(prefers-color-scheme: dark)', color: '#141826' },
+        { media: '(prefers-color-scheme: light)', color: '#f4f5f0' },
+        { media: '(prefers-color-scheme: dark)', color: '#15191c' },
     ],
 };
 
@@ -62,13 +68,13 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <html lang="pt-BR" suppressHydrationWarning>
             <head>
                 <script dangerouslySetInnerHTML={{ __html: themeScript(appearance) }} />
-                <style>{`html{background-color:oklch(98.5% 0.004 285)}html.dark{background-color:oklch(16% 0.02 265)}`}</style>
+                <style>{`html{background-color:#f4f5f0}html.dark{background-color:#15191c}`}</style>
             </head>
-            {/* A variável da fonte mora no <body> pelo mesmo motivo. Funciona
-                porque o `font-sans` do globals.css está num `@theme inline`:
-                o utilitário carrega `var(--font-instrument-sans)` cru e o
+            {/* As variáveis das fontes moram no <body> pelo mesmo motivo.
+                Funciona porque `font-sans`/`font-mono` estão num `@theme
+                inline`: o utilitário carrega `var(--font-geist)` cru e o
                 resolve no próprio elemento, não no :root. */}
-            <body className={cn(instrumentSans.variable, 'font-sans antialiased')}>
+            <body className={cn(geist.variable, geistMono.variable, 'font-sans antialiased')}>
                 <Providers user={user ? authUserResource(user) : null}>{children}</Providers>
             </body>
         </html>

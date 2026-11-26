@@ -43,7 +43,7 @@ export function InvitationCard({
                         <SquareKanban className="size-5" />
                     </span>
                     <div className="min-w-0">
-                        <p className="truncate text-lg font-bold drop-shadow-sm">{invitation.board_title}</p>
+                        <p className="truncate text-lg font-semibold drop-shadow-sm">{invitation.board_title}</p>
                         <p className="text-sm text-white/85">
                             {invitation.invited_by ?? 'Alguém'} convidou você como {role}
                         </p>
@@ -81,7 +81,7 @@ export function InvitationCard({
                 <div className="space-y-3">
                     <Link
                         href={`/register?invite=${encodeURIComponent(token)}`}
-                        className={cn(linkButton, 'bg-primary text-primary-fg shadow-sm hover:brightness-110')}
+                        className={cn(linkButton, 'bg-primary-button text-primary-button-fg shadow-sm hover:brightness-110')}
                     >
                         <UserPlus className="size-5" />
                         Criar conta e entrar

@@ -36,8 +36,8 @@ export function AccountPagination({
             <PageStep direction="previous" page={page - 1} enabled={page > 1} filters={filters} navigate={navigate} />
 
             <p className="text-xs text-muted-fg">
-                Página <span className="font-semibold text-foreground tabular-nums">{page}</span> de{' '}
-                <span className="tabular-nums">{pages}</span>
+                Página <span className="font-semibold text-foreground font-mono tabular-nums">{page}</span> de{' '}
+                <span className="font-mono tabular-nums">{pages}</span>
             </p>
 
             <PageStep direction="next" page={page + 1} enabled={page < pages} filters={filters} navigate={navigate} />

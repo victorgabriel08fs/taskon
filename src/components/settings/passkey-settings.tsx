@@ -54,7 +54,7 @@ export function PasskeySettings({ passkeys, webauthn_user_id, max }: PasskeySett
                         </p>
                     </div>
 
-                    <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-fg">
+                    <span className="shrink-0 rounded-full bg-surface-2 px-2 py-0.5 text-xs font-semibold font-mono tabular-nums text-muted-fg">
                         {passkeys.length} de {max}
                     </span>
                 </div>
